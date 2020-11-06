@@ -2,3 +2,4 @@
   base = "client/"
   publish = "dist/"
   command = "npm run build"
+  ignore = "git diff --quiet HEAD^ HEAD client/"
