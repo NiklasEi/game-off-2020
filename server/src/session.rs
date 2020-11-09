@@ -5,52 +5,59 @@ use actix::prelude::*;
 use actix_broker::BrokerIssue;
 use actix_web_actors::ws;
 
-use crate::message::{ChatMessage, JoinRoom, LeaveRoom, ListRooms, SendMessage};
-use crate::server::WsChatServer;
-use std::time::{Instant, Duration};
+use crate::message::{ChatMessage, JoinGame, LeaveGame, ListRooms, SendMessage};
+use crate::server::WsGameServer;
+use std::time::{Duration, Instant};
 
 /// How often heartbeat pings are sent
 const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
 /// How long before lack of client response causes a timeout
 const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
 
-pub struct WsChatSession {
+pub struct PlayerSession {
     id: usize,
-    room: String,
+    game: String,
     name: Option<String>,
     /// Client must send ping at least once per 10 seconds (CLIENT_TIMEOUT),
     /// otherwise we drop connection.
     hb: Instant,
 }
 
-impl Default for WsChatSession {
-    fn default() -> Self { WsChatSession {id: usize::default(), room: String::default(), name: Option::default(), hb: Instant::now()} }
+impl Default for PlayerSession {
+    fn default() -> Self {
+        PlayerSession {
+            id: usize::default(),
+            game: String::default(),
+            name: Option::default(),
+            hb: Instant::now(),
+        }
+    }
 }
 
-impl WsChatSession {
-    pub fn join_room(&mut self, room_name: &str, ctx: &mut ws::WebsocketContext<Self>) {
-        let room_name = room_name.to_owned();
+impl PlayerSession {
+    pub fn join_game(&mut self, game_name: &str, ctx: &mut ws::WebsocketContext<Self>) {
+        let game_name = game_name.to_owned();
 
         // First send a leave message for the current room
-        let leave_msg = LeaveRoom(self.room.clone(), self.id);
+        let leave_msg = LeaveGame(self.game.clone(), self.id);
 
         // issue_sync comes from having the `BrokerIssue` trait in scope.
         self.issue_system_sync(leave_msg, ctx);
 
         // Then send a join message for the new room
-        let join_msg = JoinRoom(
-            room_name.to_owned(),
+        let join_msg = JoinGame(
+            game_name.to_owned(),
             self.name.clone(),
             ctx.address().recipient(),
         );
 
-        WsChatServer::from_registry()
+        WsGameServer::from_registry()
             .send(join_msg)
             .into_actor(self)
             .then(|id, act, _ctx| {
                 if let Ok(id) = id {
                     act.id = id;
-                    act.room = room_name;
+                    act.game = game_name;
                 }
 
                 fut::ready(())
@@ -58,8 +65,8 @@ impl WsChatSession {
             .wait(ctx);
     }
 
-    pub fn list_rooms(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
-        WsChatServer::from_registry()
+    pub fn list_games(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
+        WsGameServer::from_registry()
             .send(ListRooms)
             .into_actor(self)
             .then(|res, _, ctx| {
@@ -75,13 +82,7 @@ impl WsChatSession {
     }
 
     pub fn send_msg(&self, msg: &str) {
-        let content = format!(
-            "{}: {}",
-            self.name.clone().unwrap_or_else(|| "anon".to_string()),
-            msg
-        );
-
-        let msg = SendMessage(self.room.clone(), self.id, content);
+        let msg = SendMessage(self.game.clone(), self.id, String::from(msg));
 
         // issue_async comes from having the `BrokerIssue` trait in scope.
         self.issue_system_async(msg);
@@ -91,13 +92,8 @@ impl WsChatSession {
         ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
             // check client heartbeats
             if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
-                // heartbeat timed out
-                println!("Websocket Client heartbeat failed, disconnecting!");
-
-                // stop actor
+                println!("Websocket Client heartbeat timed out, disconnecting!");
                 ctx.stop();
-
-                // don't try to send a ping
                 return;
             }
 
@@ -106,25 +102,25 @@ impl WsChatSession {
     }
 }
 
-impl Actor for WsChatSession {
+impl Actor for PlayerSession {
     type Context = ws::WebsocketContext<Self>;
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
-        self.join_room("Main", ctx);
+        self.join_game("MainGame", ctx);
     }
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         info!(
-            "WsChatSession closed for {}({}) in room {}",
+            "WsChatSession closed for {}({}) in game {}",
             self.name.clone().unwrap_or_else(|| "anon".to_string()),
             self.id,
-            self.room
+            self.game
         );
     }
 }
 
-impl Handler<ChatMessage> for WsChatSession {
+impl Handler<ChatMessage> for PlayerSession {
     type Result = ();
 
     fn handle(&mut self, msg: ChatMessage, ctx: &mut Self::Context) {
@@ -132,12 +128,8 @@ impl Handler<ChatMessage> for WsChatSession {
     }
 }
 
-impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
-    fn handle(
-        &mut self,
-        msg: Result<ws::Message, ws::ProtocolError>,
-        ctx: &mut Self::Context,
-    ) {
+impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerSession {
+    fn handle(&mut self, msg: Result<ws::Message, ws::ProtocolError>, ctx: &mut Self::Context) {
         let msg = match msg {
             Err(_) => {
                 ctx.stop();
@@ -156,11 +148,11 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                     let mut command = msg.splitn(2, ' ');
 
                     match command.next() {
-                        Some("/list") => self.list_rooms(ctx),
+                        Some("/list") => self.list_games(ctx),
 
                         Some("/join") => {
                             if let Some(room_name) = command.next() {
-                                self.join_room(room_name, ctx);
+                                self.join_game(room_name, ctx);
                             } else {
                                 ctx.text("!!! room name is required");
                             }
@@ -179,6 +171,29 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for WsChatSession {
                     }
 
                     return;
+                } else if msg.starts_with("Event ") {
+                    let mut command = msg.splitn(2, ':');
+
+                    match command.next() {
+                        Some("Event GameState") => {
+                            if let Some(payload) = command.next() {
+                                debug!("{} => GameState payload: {}", self.id, payload);
+                            }
+                        }
+                        Some("Event PlayerState") => {
+                            if let Some(payload) = command.next() {
+                                let mut json: serde_json::Value = serde_json::from_str(payload)
+                                    .expect("JSON was not well-formatted");
+                                json.as_object_mut().expect("malformed_json").insert(
+                                    String::from("playerId"),
+                                    serde_json::Value::String(self.id.to_string()),
+                                );
+                                self.send_msg(&format!("Event PlayerState:{}", &json.to_string()));
+                                debug!("{} => PlayerState payload: {}", self.id, payload);
+                            }
+                        }
+                        _ => ctx.text(format!("!!! unknown event: {:?}", msg)),
+                    }
                 }
                 self.send_msg(msg);
             }

@@ -6,11 +6,11 @@ pub struct ChatMessage(pub String);
 
 #[derive(Clone, Message)]
 #[rtype(result = "usize")]
-pub struct JoinRoom(pub String, pub Option<String>, pub Recipient<ChatMessage>);
+pub struct JoinGame(pub String, pub Option<String>, pub Recipient<ChatMessage>);
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
-pub struct LeaveRoom(pub String, pub usize);
+pub struct LeaveGame(pub String, pub usize);
 
 #[derive(Clone, Message)]
 #[rtype(result = "Vec<String>")]

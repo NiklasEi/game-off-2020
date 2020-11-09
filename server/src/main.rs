@@ -1,6 +1,6 @@
 use log::info;
 
-use actix_files::Files;
+//use actix_files::Files;
 use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 
@@ -8,13 +8,10 @@ mod message;
 mod server;
 mod session;
 
-use session::WsChatSession;
+use session::PlayerSession;
 
-async fn chat_route(
-    req: HttpRequest,
-    stream: web::Payload,
-) -> Result<HttpResponse, Error> {
-    ws::start(WsChatSession::default(), &req, stream)
+async fn chat_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+    ws::start(PlayerSession::default(), &req, stream)
 }
 
 #[actix_rt::main]
@@ -27,9 +24,9 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(middleware::Logger::default())
             .service(web::resource("/ws/").to(chat_route))
-            .service(Files::new("/", "./static/").index_file("index.html"))
+        //.service(Files::new("/", "./static/").index_file("index.html"))
     })
-        .bind(&addr)?;
+    .bind(&addr)?;
 
     info!("Starting http server: {}", &addr);
 

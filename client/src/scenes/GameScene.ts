@@ -1,4 +1,6 @@
 import * as Phaser from 'phaser';
+import { Session } from '../networking/Session';
+import { GameStatePayload, PlayerJoinedGamePayload, PlayerStateInboundPayload } from '../networking/MultiplayerEvent';
 import SettingsConfig = Phaser.Types.Scenes.SettingsConfig;
 
 export class GameScene extends Phaser.Scene {
@@ -19,8 +21,17 @@ export class GameScene extends Phaser.Scene {
   // @ts-ignore-next-line
   private scoreText: any;
 
+  // @ts-ignore-next-line
+  private readonly players: any[] = [];
+
+  private session?: Session;
+
+  // @ts-ignore-next-line
+  private gameState?: GameStatePayload;
+
   constructor(config: SettingsConfig) {
     super(config);
+    this.session = new Session(this);
   }
 
   public preload() {
@@ -29,6 +40,14 @@ export class GameScene extends Phaser.Scene {
     this.load.image('star', 'assets/star.png');
     this.load.image('bomb', 'assets/bomb.png');
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
+  }
+
+  public receiveGameState(payload: GameStatePayload) {
+    this.gameState = payload;
+  }
+
+  public disconnectSession() {
+    this.session = undefined;
   }
 
   public create() {
@@ -87,7 +106,7 @@ export class GameScene extends Phaser.Scene {
 
     this.stars.children.iterate(function (child: any) {
       //  Give each star a slightly different bounce
-      child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+      child.setBounceY(0.4);
     });
 
     this.bombs = this.physics.add.group();
@@ -104,6 +123,9 @@ export class GameScene extends Phaser.Scene {
     this.physics.add.overlap(this.player, this.stars, this.collectStar, undefined, this);
 
     this.physics.add.collider(this.player, this.bombs, this.hitBomb, undefined, this);
+
+    this.session?.initializedGame();
+    setInterval(() => this.sendGameEvents(), 100);
   }
 
   public update() {
@@ -111,11 +133,11 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    if (this.cursors.left.isDown) {
+    if (this.cursors.left.isDown === true) {
       this.player.setVelocityX(-160);
 
       this.player.anims.play('left', true);
-    } else if (this.cursors.right.isDown) {
+    } else if (this.cursors.right.isDown === true) {
       this.player.setVelocityX(160);
 
       this.player.anims.play('right', true);
@@ -125,9 +147,36 @@ export class GameScene extends Phaser.Scene {
       this.player.anims.play('turn');
     }
 
-    if (this.cursors.up.isDown && this.player.body.touching.down) {
+    if (this.cursors.up.isDown === true && this.player.body.touching.down === true) {
       this.player.setVelocityY(-330);
     }
+  }
+
+  private sendGameEvents() {
+    const stars: any[] = [];
+    this.stars.children.iterate((child: any) => stars.push(child));
+    this.session?.sendGameStateEvent({
+      stars: stars.map((star: any) => ({
+        position: {
+          x: star.x,
+          y: star.y
+        },
+        velocity: {
+          x: star.body.velocity.x,
+          y: star.body.velocity.y
+        }
+      }))
+    });
+    this.session?.sendPlayerStateEvent({
+      position: {
+        x: this.player.x,
+        y: this.player.y
+      },
+      velocity: {
+        x: this.player.body.velocity.x,
+        y: this.player.body.velocity.y
+      }
+    });
   }
 
   private hitBomb(player: any, _bomb: any) {
@@ -145,7 +194,7 @@ export class GameScene extends Phaser.Scene {
 
     //  Add and update the score
     this.score += 10;
-    this.scoreText.setText('Score: ' + this.score);
+    this.scoreText.setText(`Score: ${this.score}`);
 
     if (this.stars.countActive(true) === 0) {
       //  A new batch of stars to collect
@@ -160,6 +209,31 @@ export class GameScene extends Phaser.Scene {
       bomb.setCollideWorldBounds(true);
       bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
       bomb.allowGravity = false;
+    }
+  }
+
+  addNewPlayer(payload: PlayerJoinedGamePayload) {
+    const player = this.physics.add.sprite(100, 450, 'dude');
+    player.setBounce(0.2);
+    player.setCollideWorldBounds(true);
+    this.physics.add.collider(player, this.platforms);
+    player.name = payload.playerId;
+    this.players.push(player);
+  }
+
+  updatePlayer(payload: PlayerStateInboundPayload) {
+    const player = this.players.find((player) => player.name === payload.playerId);
+    if (player === undefined) return;
+    player.x = payload.position.x;
+    player.y = payload.position.y;
+    player.setVelocityX(payload.velocity.x);
+    player.setVelocityY(payload.velocity.y);
+    if (payload.velocity.x < 0) {
+      player.anims.play('left', true);
+    } else if (payload.velocity.x > 0) {
+      player.anims.play('right', true);
+    } else {
+      player.anims.play('turn');
     }
   }
 }
