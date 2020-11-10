@@ -5,31 +5,34 @@ use actix::prelude::*;
 use actix_broker::BrokerIssue;
 use actix_web_actors::ws;
 
-use crate::message::{ChatMessage, JoinGame, LeaveGame, ListRooms, SendMessage};
+use serde_json::json;
+
+use crate::message::{ChatMessage, GameState, JoinGame, LeaveGame, ListRooms, SendMessage};
 use crate::server::WsGameServer;
 use std::time::{Duration, Instant};
 
-/// How often heartbeat pings are sent
-const HEARTBEAT_INTERVAL: Duration = Duration::from_secs(5);
-/// How long before lack of client response causes a timeout
-const CLIENT_TIMEOUT: Duration = Duration::from_secs(10);
-
+#[derive(Default)]
 pub struct PlayerSession {
     id: usize,
     game: String,
     name: Option<String>,
     /// Client must send ping at least once per 10 seconds (CLIENT_TIMEOUT),
     /// otherwise we drop connection.
-    hb: Instant,
+    hb: HeartBeat,
 }
 
-impl Default for PlayerSession {
+struct HeartBeat {
+    last_client_hb: Instant,
+    interval: Duration,
+    timeout: Duration,
+}
+
+impl Default for HeartBeat {
     fn default() -> Self {
-        PlayerSession {
-            id: usize::default(),
-            game: String::default(),
-            name: Option::default(),
-            hb: Instant::now(),
+        HeartBeat {
+            last_client_hb: Instant::now(),
+            interval: Duration::from_secs(5),
+            timeout: Duration::from_secs(10),
         }
     }
 }
@@ -88,10 +91,22 @@ impl PlayerSession {
         self.issue_system_async(msg);
     }
 
+    pub fn send_game_state(&self, payload: serde_json::Value, secret: String) {
+        let msg = GameState {
+            source_id: self.id,
+            room_name: self.game.to_owned(),
+            payload,
+            secret,
+        };
+
+        // issue_async comes from having the `BrokerIssue` trait in scope.
+        self.issue_system_async(msg);
+    }
+
     fn hb(&self, ctx: &mut <Self as Actor>::Context) {
-        ctx.run_interval(HEARTBEAT_INTERVAL, |act, ctx| {
+        ctx.run_interval(self.hb.interval, |act, ctx| {
             // check client heartbeats
-            if Instant::now().duration_since(act.hb) > CLIENT_TIMEOUT {
+            if Instant::now().duration_since(act.hb.last_client_hb) > act.hb.timeout {
                 println!("Websocket Client heartbeat timed out, disconnecting!");
                 ctx.stop();
                 return;
@@ -177,19 +192,28 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerSession {
                     match command.next() {
                         Some("Event GameState") => {
                             if let Some(payload) = command.next() {
-                                debug!("{} => GameState payload: {}", self.id, payload);
+                                let json: serde_json::Value =
+                                    serde_json::from_str(payload).expect("malformed_json");
+                                let json_map =
+                                    json.as_object().expect("malformed_json: not an object");
+                                let secret = json_map.get("secret").expect("No secret").as_str();
+
+                                if let Some(secret) = secret {
+                                    self.send_game_state(json!(json_map), secret.to_string());
+                                }
                             }
                         }
                         Some("Event PlayerState") => {
                             if let Some(payload) = command.next() {
-                                let mut json: serde_json::Value = serde_json::from_str(payload)
-                                    .expect("JSON was not well-formatted");
-                                json.as_object_mut().expect("malformed_json").insert(
-                                    String::from("playerId"),
-                                    serde_json::Value::String(self.id.to_string()),
-                                );
+                                let mut json: serde_json::Value =
+                                    serde_json::from_str(payload).expect("malformed_json");
+                                json.as_object_mut()
+                                    .expect("malformed_json: not an object")
+                                    .insert(
+                                        String::from("playerId"),
+                                        serde_json::Value::String(self.id.to_string()),
+                                    );
                                 self.send_msg(&format!("Event PlayerState:{}", &json.to_string()));
-                                debug!("{} => PlayerState payload: {}", self.id, payload);
                             }
                         }
                         _ => ctx.text(format!("!!! unknown event: {:?}", msg)),
@@ -202,7 +226,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerSession {
                 ctx.stop();
             }
             ws::Message::Pong(_bytes) => {
-                self.hb = Instant::now();
+                self.hb.last_client_hb = Instant::now();
             }
             _ => {}
         }

@@ -15,7 +15,7 @@ export class GameScene extends Phaser.Scene {
   // @ts-ignore-next-line
   private cursors: any;
   // @ts-ignore-next-line
-  private score = 0;
+  private readonly score = 0;
   // @ts-ignore-next-line
   private gameOver = false;
   // @ts-ignore-next-line
@@ -25,9 +25,6 @@ export class GameScene extends Phaser.Scene {
   private readonly players: any[] = [];
 
   private session?: Session;
-
-  // @ts-ignore-next-line
-  private gameState?: GameStatePayload;
 
   constructor(config: SettingsConfig) {
     super(config);
@@ -40,10 +37,6 @@ export class GameScene extends Phaser.Scene {
     this.load.image('star', 'assets/star.png');
     this.load.image('bomb', 'assets/bomb.png');
     this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
-  }
-
-  public receiveGameState(payload: GameStatePayload) {
-    this.gameState = payload;
   }
 
   public disconnectSession() {
@@ -97,17 +90,16 @@ export class GameScene extends Phaser.Scene {
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
 
-    //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
-    this.stars = this.physics.add.group({
-      key: 'star',
-      repeat: 11,
-      setXY: { x: 12, y: 0, stepX: 70 }
-    });
+    this.stars = this.physics.add.group();
 
-    this.stars.children.iterate(function (child: any) {
-      //  Give each star a slightly different bounce
-      child.setBounceY(0.4);
-    });
+    if (this.session !== undefined && this.session.isRoomLeader) {
+      for (let starIndex = 0; starIndex < 12; starIndex++) {
+        const star = this.stars.create(12 + starIndex * 70, 0, 'star');
+        star.name = `${starIndex}`;
+        star.setBounce(0.4);
+        star.setCollideWorldBounds(true);
+      }
+    }
 
     this.bombs = this.physics.add.group();
 
@@ -155,18 +147,22 @@ export class GameScene extends Phaser.Scene {
   private sendGameEvents() {
     const stars: any[] = [];
     this.stars.children.iterate((child: any) => stars.push(child));
-    this.session?.sendGameStateEvent({
-      stars: stars.map((star: any) => ({
-        position: {
-          x: star.x,
-          y: star.y
-        },
-        velocity: {
-          x: star.body.velocity.x,
-          y: star.body.velocity.y
-        }
-      }))
-    });
+    if (this.session !== undefined && this.session.isRoomLeader) {
+      this.session.sendGameStateEvent({
+        stars: stars.map((star: any) => ({
+          id: star.name,
+          position: {
+            x: star.x,
+            y: star.y
+          },
+          velocity: {
+            x: star.body.velocity.x,
+            y: star.body.velocity.y
+          }
+        })),
+        bombs: []
+      });
+    }
     this.session?.sendPlayerStateEvent({
       position: {
         x: this.player.x,
@@ -189,27 +185,28 @@ export class GameScene extends Phaser.Scene {
     this.gameOver = true;
   }
 
+  // @ts-ignore-next-line
   private collectStar(player: any, star: any) {
-    star.disableBody(true, true);
-
-    //  Add and update the score
-    this.score += 10;
-    this.scoreText.setText(`Score: ${this.score}`);
-
-    if (this.stars.countActive(true) === 0) {
-      //  A new batch of stars to collect
-      this.stars.children.iterate(function (child: any) {
-        child.enableBody(true, child.x, 0, true, true);
-      });
-
-      const x = player.x < 400 ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
-
-      const bomb = this.bombs.create(x, 16, 'bomb');
-      bomb.setBounce(1);
-      bomb.setCollideWorldBounds(true);
-      bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-      bomb.allowGravity = false;
-    }
+    // star.disableBody(true, true);
+    //
+    // //  Add and update the score
+    // this.score += 10;
+    // this.scoreText.setText(`Score: ${this.score}`);
+    //
+    // if (this.stars.countActive(true) === 0) {
+    //   //  A new batch of stars to collect
+    //   this.stars.children.iterate(function (child: any) {
+    //     child.enableBody(true, child.x, 0, true, true);
+    //   });
+    //
+    //   const x = player.x < 400 ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+    //
+    //   const bomb = this.bombs.create(x, 16, 'bomb');
+    //   bomb.setBounce(1);
+    //   bomb.setCollideWorldBounds(true);
+    //   bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+    //   bomb.allowGravity = false;
+    // }
   }
 
   addNewPlayer(payload: PlayerJoinedGamePayload) {
@@ -234,6 +231,25 @@ export class GameScene extends Phaser.Scene {
       player.anims.play('right', true);
     } else {
       player.anims.play('turn');
+    }
+  }
+
+  public updateGameState(payload: GameStatePayload) {
+    for (const star of payload.stars) {
+      const starEntity = this.stars.create(star.position.x, star.position.y, 'star');
+      starEntity.name = star.id;
+      starEntity.setBounce(0.4);
+      starEntity.setCollideWorldBounds(true);
+      starEntity.setVelocityX(star.velocity.x);
+      starEntity.setVelocityY(star.velocity.y);
+    }
+
+    for (const bomb of payload.bombs) {
+      const bombEntity = this.bombs.create(Phaser.Math.Between(0, 800), bomb.position.y, 'bomb');
+      bombEntity.setBounce(1);
+      bombEntity.setCollideWorldBounds(true);
+      bombEntity.setVelocity(Phaser.Math.Between(-200, 200), 20);
+      bombEntity.allowGravity = false;
     }
   }
 }

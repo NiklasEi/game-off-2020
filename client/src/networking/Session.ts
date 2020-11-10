@@ -5,12 +5,14 @@ import {
   PlayerJoinedGamePayload,
   PlayerStateInboundPayload,
   PlayerStateOutboundPayload,
-  RoomLeaderPayload
+  RoomLeaderPayload,
+  SignedGameStatePayload
 } from './MultiplayerEvent';
 
 export class Session {
   private socket: WebSocket;
   private readonly gameScene: GameScene;
+  public isRoomLeader: boolean = false;
   private secret?: string;
   private gameInitialized = false;
   private readonly playerJoinedEvents: PlayerJoinedGamePayload[] = [];
@@ -60,7 +62,11 @@ export class Session {
 
   public sendGameStateEvent(payload: GameStatePayload) {
     if (this.secret !== undefined) {
-      this.sendEvent(MultiplayerEvent.GAME_STATE, payload);
+      const signedPayload: SignedGameStatePayload = {
+        ...payload,
+        secret: this.secret
+      };
+      this.sendEvent(MultiplayerEvent.GAME_STATE, signedPayload);
     }
   }
 
@@ -79,14 +85,18 @@ export class Session {
     const payload = JSON.parse(message.replace(/^[a-zA-Z]+:/, ''));
     switch (event) {
       case MultiplayerEvent.GAME_STATE: {
-        // @ts-ignore-next-line
         const state = payload as GameStatePayload;
-        // console.log(`received game state payload ${state}`);
+        if (this.isRoomLeader) {
+          // eslint-disable-next-line no-console
+          console.warn('got game state as room leader O.o');
+        }
+        this.gameScene.updateGameState(state);
         break;
       }
       case MultiplayerEvent.ROOM_LEADER: {
         const state = payload as RoomLeaderPayload;
         this.secret = state.secret;
+        this.isRoomLeader = true;
         break;
       }
       case MultiplayerEvent.PLAYER_JOINED_GAME: {

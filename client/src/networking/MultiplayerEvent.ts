@@ -12,8 +12,13 @@ export interface PlayerStateInboundPayload extends PlayerStateOutboundPayload {
 
 export type PlayerStateOutboundPayload = Entity;
 
+export interface SignedGameStatePayload extends GameStatePayload {
+  secret: string;
+}
+
 export interface GameStatePayload {
-  stars: Entity[];
+  stars: EntityWithId[];
+  bombs: EntityWithId[];
 }
 
 export interface RoomLeaderPayload {
@@ -22,6 +27,10 @@ export interface RoomLeaderPayload {
 
 export interface PlayerJoinedGamePayload {
   playerId: string;
+}
+
+export interface EntityWithId extends Entity {
+  id: string;
 }
 
 export interface Entity {

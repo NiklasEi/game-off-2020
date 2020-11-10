@@ -12,6 +12,15 @@ pub struct JoinGame(pub String, pub Option<String>, pub Recipient<ChatMessage>);
 #[rtype(result = "()")]
 pub struct LeaveGame(pub String, pub usize);
 
+#[derive(Clone, Message, Debug)]
+#[rtype(result = "()")]
+pub struct GameState {
+    pub room_name: String,
+    pub source_id: usize,
+    pub secret: String,
+    pub payload: serde_json::Value,
+}
+
 #[derive(Clone, Message)]
 #[rtype(result = "Vec<String>")]
 pub struct ListRooms;
