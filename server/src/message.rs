@@ -2,29 +2,36 @@ use actix::prelude::*;
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
-pub struct ChatMessage(pub String);
+pub struct Message(pub String);
 
 #[derive(Clone, Message)]
 #[rtype(result = "usize")]
-pub struct JoinGame(pub String, pub Option<String>, pub Recipient<ChatMessage>);
+pub struct JoinGame(pub String, pub Option<String>, pub Recipient<Message>);
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
-pub struct LeaveGame(pub String, pub usize);
+pub struct LeaveGame {
+    pub game_name: String,
+    pub player_id: usize,
+}
 
 #[derive(Clone, Message, Debug)]
 #[rtype(result = "()")]
 pub struct GameState {
-    pub room_name: String,
-    pub source_id: usize,
+    pub game_name: String,
+    pub sender_id: usize,
     pub secret: String,
     pub payload: serde_json::Value,
 }
 
 #[derive(Clone, Message)]
 #[rtype(result = "Vec<String>")]
-pub struct ListRooms;
+pub struct ListGames;
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]
-pub struct SendMessage(pub String, pub usize, pub String);
+pub struct GameMessage {
+    pub game_name: String,
+    pub message: String,
+    pub sender_id: usize,
+}

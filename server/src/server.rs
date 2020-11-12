@@ -9,9 +9,9 @@ use actix_broker::BrokerSubscribe;
 use std::collections::HashMap;
 use std::mem;
 
-use crate::message::{ChatMessage, GameState, JoinGame, LeaveGame, ListRooms, SendMessage};
+use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message};
 
-type Client = Recipient<ChatMessage>;
+type Client = Recipient<Message>;
 
 #[derive(Default, Debug)]
 pub struct Game {
@@ -45,7 +45,7 @@ impl WsGameServer {
             }
             game.players.iter().for_each(|(player_id, _player)| {
                 let join_msg = format!("Event PlayerJoinedGame:{{\"playerId\":\"{}\"}}", player_id);
-                client.do_send(ChatMessage(join_msg)).ok();
+                client.do_send(Message(join_msg)).ok();
             });
             game.players.insert(id, client);
             return id;
@@ -69,7 +69,7 @@ impl WsGameServer {
                 if player_id == &src {
                     return true;
                 }
-                player.do_send(ChatMessage(msg.to_owned())).is_ok()
+                player.do_send(Message(msg.to_owned())).is_ok()
             })
             .collect();
         game.players = players;
@@ -86,7 +86,7 @@ impl WsGameServer {
                     .get(&recipient)
                     .expect("failed to find expected player in game");
                 player
-                    .do_send(ChatMessage(msg.to_owned()))
+                    .do_send(Message(msg.to_owned()))
                     .expect("Failed to send message to player");
             }
         }
@@ -119,7 +119,7 @@ impl Actor for WsGameServer {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.subscribe_system_async::<LeaveGame>(ctx);
-        self.subscribe_system_async::<SendMessage>(ctx);
+        self.subscribe_system_async::<GameMessage>(ctx);
         self.subscribe_system_async::<GameState>(ctx);
     }
 }
@@ -148,16 +148,16 @@ impl Handler<LeaveGame> for WsGameServer {
     type Result = ();
 
     fn handle(&mut self, msg: LeaveGame, _ctx: &mut Self::Context) {
-        if let Some(room) = self.games.get_mut(&msg.0) {
-            room.players.remove(&msg.1);
-            if room.leader == Some(msg.1) {
+        if let Some(room) = self.games.get_mut(&msg.game_name) {
+            room.players.remove(&msg.player_id);
+            if room.leader == Some(msg.player_id) {
                 if room.players.len() < 1 {
-                    self.games.remove(&msg.0);
+                    self.games.remove(&msg.game_name);
                     return;
                 }
 
                 if let Some((&player_id, _client)) = room.players.iter().next() {
-                    self.make_player_leader(player_id, msg.0);
+                    self.make_player_leader(player_id, msg.game_name);
                 }
             }
         }
@@ -168,32 +168,36 @@ impl Handler<GameState> for WsGameServer {
     type Result = ();
 
     fn handle(&mut self, msg: GameState, _ctx: &mut Self::Context) {
-        if let Some(room) = self.games.get(&msg.room_name) {
-            if room.leader == Some(msg.source_id) && room.secret == Some(msg.secret) {
+        if let Some(room) = self.games.get(&msg.game_name) {
+            if room.leader == Some(msg.sender_id) && room.secret == Some(msg.secret) {
                 self.send_message_to_game(
-                    &msg.room_name,
+                    &msg.game_name,
                     &format!("Event GameState:{}", &msg.payload.to_string()),
-                    msg.source_id,
+                    msg.sender_id,
                 );
             }
         }
     }
 }
 
-impl Handler<ListRooms> for WsGameServer {
-    type Result = MessageResult<ListRooms>;
+impl Handler<ListGames> for WsGameServer {
+    type Result = MessageResult<ListGames>;
 
-    fn handle(&mut self, _: ListRooms, _ctx: &mut Self::Context) -> Self::Result {
+    fn handle(&mut self, _: ListGames, _ctx: &mut Self::Context) -> Self::Result {
         MessageResult(self.games.keys().cloned().collect())
     }
 }
 
-impl Handler<SendMessage> for WsGameServer {
+impl Handler<GameMessage> for WsGameServer {
     type Result = ();
 
-    fn handle(&mut self, msg: SendMessage, _ctx: &mut Self::Context) {
-        let SendMessage(room_name, id, msg) = msg;
-        self.send_message_to_game(&room_name, &msg, id);
+    fn handle(&mut self, msg: GameMessage, _ctx: &mut Self::Context) {
+        let GameMessage {
+            game_name,
+            message,
+            sender_id,
+        } = msg;
+        self.send_message_to_game(&game_name, &message, sender_id);
     }
 }
 

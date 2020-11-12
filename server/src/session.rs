@@ -7,14 +7,14 @@ use actix_web_actors::ws;
 
 use serde_json::json;
 
-use crate::message::{ChatMessage, GameState, JoinGame, LeaveGame, ListRooms, SendMessage};
+use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, Message};
 use crate::server::WsGameServer;
 use std::time::{Duration, Instant};
 
 #[derive(Default)]
 pub struct PlayerSession {
     id: usize,
-    game: String,
+    game_name: String,
     name: Option<String>,
     /// Client must send ping at least once per 10 seconds (CLIENT_TIMEOUT),
     /// otherwise we drop connection.
@@ -42,7 +42,10 @@ impl PlayerSession {
         let game_name = game_name.to_owned();
 
         // First send a leave message for the current room
-        let leave_msg = LeaveGame(self.game.clone(), self.id);
+        let leave_msg = LeaveGame {
+            game_name: self.game_name.clone(),
+            player_id: self.id,
+        };
 
         // issue_sync comes from having the `BrokerIssue` trait in scope.
         self.issue_system_sync(leave_msg, ctx);
@@ -59,33 +62,38 @@ impl PlayerSession {
             .into_actor(self)
             .then(|id, act, _ctx| {
                 if let Ok(id) = id {
+                    // ToDo: lässt sich das typen?
                     act.id = id;
-                    act.game = game_name;
+                    act.game_name = game_name;
                 }
 
                 fut::ready(())
             })
-            .wait(ctx);
+            .wait(ctx); // ToDo: das blockt? Geht das auch anders?
     }
 
-    pub fn list_games(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
-        WsGameServer::from_registry()
-            .send(ListRooms)
-            .into_actor(self)
-            .then(|res, _, ctx| {
-                if let Ok(rooms) = res {
-                    for room in rooms {
-                        ctx.text(room);
-                    }
-                }
-
-                fut::ready(())
-            })
-            .wait(ctx);
-    }
+    // pub fn list_games(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
+    //     WsGameServer::from_registry()
+    //         .send(ListGames)
+    //         .into_actor(self)
+    //         .then(|res, _, ctx| {
+    //             if let Ok(rooms) = res {
+    //                 for room in rooms {
+    //                     ctx.text(room);
+    //                 }
+    //             }
+    //
+    //             fut::ready(())
+    //         })
+    //         .wait(ctx);
+    // }
 
     pub fn send_msg(&self, msg: &str) {
-        let msg = SendMessage(self.game.clone(), self.id, String::from(msg));
+        let msg = GameMessage {
+            game_name: self.game_name.clone(),
+            message: String::from(msg),
+            sender_id: self.id,
+        };
 
         // issue_async comes from having the `BrokerIssue` trait in scope.
         self.issue_system_async(msg);
@@ -93,8 +101,8 @@ impl PlayerSession {
 
     pub fn send_game_state(&self, payload: serde_json::Value, secret: String) {
         let msg = GameState {
-            source_id: self.id,
-            room_name: self.game.to_owned(),
+            sender_id: self.id,
+            game_name: self.game_name.to_owned(),
             payload,
             secret,
         };
@@ -130,15 +138,15 @@ impl Actor for PlayerSession {
             "WsChatSession closed for {}({}) in game {}",
             self.name.clone().unwrap_or_else(|| "anon".to_string()),
             self.id,
-            self.game
+            self.game_name
         );
     }
 }
 
-impl Handler<ChatMessage> for PlayerSession {
+impl Handler<Message> for PlayerSession {
     type Result = ();
 
-    fn handle(&mut self, msg: ChatMessage, ctx: &mut Self::Context) {
+    fn handle(&mut self, msg: Message, ctx: &mut Self::Context) {
         ctx.text(msg.0);
     }
 }
@@ -159,34 +167,7 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerSession {
             ws::Message::Text(text) => {
                 let msg = text.trim();
 
-                if msg.starts_with('/') {
-                    let mut command = msg.splitn(2, ' ');
-
-                    match command.next() {
-                        Some("/list") => self.list_games(ctx),
-
-                        Some("/join") => {
-                            if let Some(room_name) = command.next() {
-                                self.join_game(room_name, ctx);
-                            } else {
-                                ctx.text("!!! room name is required");
-                            }
-                        }
-
-                        Some("/name") => {
-                            if let Some(name) = command.next() {
-                                self.name = Some(name.to_owned());
-                                ctx.text(format!("name changed to: {}", name));
-                            } else {
-                                ctx.text("!!! name is required");
-                            }
-                        }
-
-                        _ => ctx.text(format!("!!! unknown command: {:?}", msg)),
-                    }
-
-                    return;
-                } else if msg.starts_with("Event ") {
+                if msg.starts_with("Event ") {
                     let mut command = msg.splitn(2, ':');
 
                     match command.next() {

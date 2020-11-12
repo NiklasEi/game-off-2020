@@ -10,7 +10,7 @@ mod session;
 
 use session::PlayerSession;
 
-async fn chat_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
+async fn game_route(req: HttpRequest, stream: web::Payload) -> Result<HttpResponse, Error> {
     ws::start(PlayerSession::default(), &req, stream)
 }
 
@@ -20,15 +20,15 @@ async fn main() -> std::io::Result<()> {
 
     let addr = "127.0.0.1:8080";
 
-    let srv = HttpServer::new(move || {
+    let srv = HttpServer::new(|| {
         App::new()
             .wrap(middleware::Logger::default())
-            .service(web::resource("/ws/").to(chat_route))
+            .service(web::resource("/ws/").to(game_route))
         //.service(Files::new("/", "./static/").index_file("index.html"))
     })
     .bind(&addr)?;
 
-    info!("Starting http server: {}", &addr);
+    info!("Starting server: {}", &addr);
 
     srv.run().await
 }
