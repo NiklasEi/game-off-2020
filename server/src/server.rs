@@ -128,18 +128,18 @@ impl Handler<JoinGame> for WsGameServer {
     type Result = MessageResult<JoinGame>;
 
     fn handle(&mut self, msg: JoinGame, _ctx: &mut Self::Context) -> Self::Result {
-        let JoinGame(room_name, _client_name, client) = msg;
+        let JoinGame { game_name, player } = msg;
 
-        let id = self.add_player_to_game(&room_name, None, client);
+        let id = self.add_player_to_game(&game_name, None, player);
         let join_msg = format!("Event PlayerJoinedGame:{{\"playerId\":\"{}\"}}", id);
 
-        let game = self.games.get(&room_name).expect("Failed to get room");
+        let game = self.games.get(&game_name).expect("Failed to get room");
         if game.leader.is_none() {
             info!("Making {} leader of game {:?}", id, game);
-            self.make_player_leader(id, String::from(&room_name));
+            self.make_player_leader(id, String::from(&game_name));
         }
 
-        self.send_message_to_game(&room_name, &join_msg, id);
+        self.send_message_to_game(&game_name, &join_msg, id);
         MessageResult(id)
     }
 }

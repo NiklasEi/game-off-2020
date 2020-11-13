@@ -6,7 +6,10 @@ pub struct Message(pub String);
 
 #[derive(Clone, Message)]
 #[rtype(result = "usize")]
-pub struct JoinGame(pub String, pub Option<String>, pub Recipient<Message>);
+pub struct JoinGame {
+    pub game_name: String,
+    pub player: Recipient<Message>,
+}
 
 #[derive(Clone, Message)]
 #[rtype(result = "()")]

@@ -15,7 +15,6 @@ use std::time::{Duration, Instant};
 pub struct PlayerSession {
     id: usize,
     game_name: String,
-    name: Option<String>,
     /// Client must send ping at least once per 10 seconds (CLIENT_TIMEOUT),
     /// otherwise we drop connection.
     hb: HeartBeat,
@@ -51,25 +50,23 @@ impl PlayerSession {
         self.issue_system_sync(leave_msg, ctx);
 
         // Then send a join message for the new room
-        let join_msg = JoinGame(
-            game_name.to_owned(),
-            self.name.clone(),
-            ctx.address().recipient(),
-        );
+        let join_msg = JoinGame {
+            game_name: game_name.to_owned(),
+            player: ctx.address().recipient(),
+        };
 
         WsGameServer::from_registry()
             .send(join_msg)
             .into_actor(self)
             .then(|id, act, _ctx| {
                 if let Ok(id) = id {
-                    // ToDo: lässt sich das typen?
                     act.id = id;
                     act.game_name = game_name;
                 }
 
                 fut::ready(())
             })
-            .wait(ctx); // ToDo: das blockt? Geht das auch anders?
+            .wait(ctx);
     }
 
     // pub fn list_games(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
@@ -135,10 +132,8 @@ impl Actor for PlayerSession {
 
     fn stopped(&mut self, _ctx: &mut Self::Context) {
         info!(
-            "WsChatSession closed for {}({}) in game {}",
-            self.name.clone().unwrap_or_else(|| "anon".to_string()),
-            self.id,
-            self.game_name
+            "WsGameSession closed for {} in game {}",
+            self.id, self.game_name
         );
     }
 }
