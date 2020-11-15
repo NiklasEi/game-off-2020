@@ -10,6 +10,7 @@ use serde_json::json;
 use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, Message};
 use crate::server::WsGameServer;
 use std::time::{Duration, Instant};
+use std::ops::Deref;
 
 #[derive(Default)]
 pub struct PlayerSession {
@@ -51,7 +52,7 @@ impl PlayerSession {
 
         // Then send a join message for the new room
         let join_msg = JoinGame {
-            game_name: game_name.to_owned(),
+            game_name: game_name.clone(),
             player: ctx.address().recipient(),
         };
 

@@ -7,7 +7,6 @@ use actix::prelude::*;
 use actix_broker::BrokerSubscribe;
 
 use std::collections::HashMap;
-use std::mem;
 
 use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message};
 
@@ -26,42 +25,31 @@ pub struct WsGameServer {
 }
 
 impl WsGameServer {
-    fn take_game(&mut self, game_name: &str) -> Option<Game> {
-        let game = self.games.get_mut(game_name)?;
-        let game = mem::replace(game, Game::default());
-        Some(game)
-    }
 
     fn add_player_to_game(&mut self, game_name: &str, id: Option<usize>, client: Client) -> usize {
         let mut id = id.unwrap_or_else(rand::random::<usize>);
 
-        if let Some(game) = self.games.get_mut(game_name) {
-            loop {
-                if game.players.contains_key(&id) {
-                    id = rand::random::<usize>();
-                } else {
-                    break;
-                }
+        let game = self
+            .games
+            .entry(game_name.to_owned())
+            .or_insert_with(Game::default);
+        loop {
+            if game.players.contains_key(&id) {
+                id = rand::random::<usize>();
+            } else {
+                break;
             }
-            game.players.iter().for_each(|(player_id, _player)| {
-                let join_msg = format!("Event PlayerJoinedGame:{{\"playerId\":\"{}\"}}", player_id);
-                client.do_send(Message(join_msg)).ok();
-            });
-            game.players.insert(id, client);
-            return id;
         }
-
-        // Create a new room for the first client
-        let mut game: Game = Game::default();
-
+        game.players.iter().for_each(|(player_id, _player)| {
+            let join_msg = format!("Event PlayerJoinedGame:{{\"playerId\":\"{}\"}}", player_id);
+            client.do_send(Message(join_msg)).ok();
+        });
         game.players.insert(id, client);
-        self.games.insert(game_name.to_owned(), game);
-
         id
     }
 
     fn send_message_to_game(&mut self, game_name: &str, msg: &str, src: usize) -> Option<()> {
-        let mut game = self.take_game(game_name)?;
+        let mut game = self.games.remove(game_name)?;
         let players = game
             .players
             .drain()
@@ -73,7 +61,7 @@ impl WsGameServer {
             })
             .collect();
         game.players = players;
-        self.games.insert(String::from(game_name), game);
+        self.games.insert(game_name.to_owned(), game);
 
         Some(())
     }
