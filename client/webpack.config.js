@@ -38,6 +38,7 @@ module.exports = {
         contentBase: path.resolve(__dirname, 'dist'),
         writeToDisk: true,
         open: true,
+        port: 3000,
     },
 
     plugins: [

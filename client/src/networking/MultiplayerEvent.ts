@@ -1,5 +1,4 @@
 export enum MultiplayerEvent {
-  COLLECT_STAR = 'CollectStar',
   GAME_STATE = 'GameState',
   PLAYER_STATE = 'PlayerState',
   ROOM_LEADER = 'RoomLeader',
