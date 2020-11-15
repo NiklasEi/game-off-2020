@@ -3,3 +3,7 @@
   publish = "dist/"
   command = "npm run build"
   ignore = "git diff --quiet HEAD^ HEAD client/"
+
+[build.environment]
+NODE_VERSION = "14.5.0"
+SERVER_BASE_HOST = "game-on-2020.herokuapp.com"
