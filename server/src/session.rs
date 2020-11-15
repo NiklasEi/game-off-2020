@@ -10,7 +10,6 @@ use serde_json::json;
 use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, Message};
 use crate::server::WsGameServer;
 use std::time::{Duration, Instant};
-use std::ops::Deref;
 
 #[derive(Default)]
 pub struct PlayerSession {

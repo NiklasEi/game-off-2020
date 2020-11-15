@@ -25,7 +25,6 @@ pub struct WsGameServer {
 }
 
 impl WsGameServer {
-
     fn add_player_to_game(&mut self, game_name: &str, id: Option<usize>, client: Client) -> usize {
         let mut id = id.unwrap_or_else(rand::random::<usize>);
 
