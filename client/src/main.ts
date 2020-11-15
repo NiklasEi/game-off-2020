@@ -1,20 +1,22 @@
 import { GameScene } from './scenes/GameScene';
-import SettingsConfig = Phaser.Types.Scenes.SettingsConfig;
+import MainMenu from './scenes/MainMenu';
+import Preloader from './scenes/Preloader';
+import * as Phaser from 'phaser';
 
-const sceneConfig: SettingsConfig = {
-  active: false,
-  visible: false,
-  key: 'Game'
-};
+// import SettingsConfig = Phaser.Types.Scenes.SettingsConfig;
+
+// const sceneConfig: SettingsConfig = {
+//   active: false,
+//   visible: false,
+//   key: 'Game'
+// };
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   title: 'Phaser',
-
-  scene: new GameScene(sceneConfig),
-
-  type: Phaser.AUTO,
-  parent: 'game',
+  type: Phaser.WEBGL,
+  scene: [Preloader, MainMenu, GameScene],
   backgroundColor: '#000000',
+  parent: 'content',
 
   width: 800,
   height: 600,
@@ -22,7 +24,7 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
   physics: {
     default: 'arcade',
     arcade: {
-      gravity: { y: 300 },
+      gravity: { y: 0 },
       debug: true
     }
   }

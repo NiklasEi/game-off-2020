@@ -1,7 +1,7 @@
 import * as Phaser from 'phaser';
 import { Session } from '../networking/Session';
 import { GameStatePayload, PlayerJoinedGamePayload, PlayerStateInboundPayload } from '../networking/MultiplayerEvent';
-import SettingsConfig = Phaser.Types.Scenes.SettingsConfig;
+import { tileSize } from '../utils/constants';
 
 export class GameScene extends Phaser.Scene {
   // @ts-ignore-next-line
@@ -11,11 +11,10 @@ export class GameScene extends Phaser.Scene {
   // @ts-ignore-next-line
   private bombs: any;
   // @ts-ignore-next-line
-  private platforms: Phaser.Physics.Arcade.StaticGroup;
+  private readonly platforms: Phaser.Physics.Arcade.StaticGroup;
+  private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   // @ts-ignore-next-line
-  private cursors: any;
-  // @ts-ignore-next-line
-  private readonly score = 0;
+  private score = 0;
   // @ts-ignore-next-line
   private gameOver = false;
   // @ts-ignore-next-line
@@ -26,17 +25,13 @@ export class GameScene extends Phaser.Scene {
 
   private session?: Session;
 
-  constructor(config: SettingsConfig) {
-    super(config);
+  constructor() {
+    super('game');
     this.session = new Session(this);
   }
 
   public preload() {
-    this.load.image('sky', 'assets/sky.png');
-    this.load.image('ground', 'assets/platform.png');
-    this.load.image('star', 'assets/star.png');
-    this.load.image('bomb', 'assets/bomb.png');
-    this.load.spritesheet('dude', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
+    this.cursors = this.input.keyboard.createCursorKeys();
   }
 
   public disconnectSession() {
@@ -44,20 +39,25 @@ export class GameScene extends Phaser.Scene {
   }
 
   public create() {
+    // prepare map
+    const map = this.make.tilemap({ key: 'space' });
+    const tileset = map.addTilesetImage('space', 'spacetiles', tileSize, tileSize, 1, 2);
+    map.createStaticLayer('background', tileset);
+
     //  A simple background for our game
-    this.add.image(400, 300, 'sky');
-
-    //  The platforms group contains the ground and the 2 ledges we can jump on
-    this.platforms = this.physics.add.staticGroup();
-
-    //  Here we create the ground.
-    //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
-    this.platforms.create(400, 568, 'ground').setScale(2).refreshBody();
-
-    //  Now let's create some ledges
-    this.platforms.create(600, 400, 'ground');
-    this.platforms.create(50, 250, 'ground');
-    this.platforms.create(750, 220, 'ground');
+    // this.add.image(400, 300, 'sky');
+    //
+    // //  The platforms group contains the ground and the 2 ledges we can jump on
+    // this.platforms = this.physics.add.staticGroup();
+    //
+    // //  Here we create the ground.
+    // //  Scale it to fit the width of the game (the original sprite is 400x32 in size)
+    // this.platforms.create(400, 568, 'ground').setScale(2).refreshBody();
+    //
+    // //  Now let's create some ledges
+    // this.platforms.create(600, 400, 'ground');
+    // this.platforms.create(50, 250, 'ground');
+    // this.platforms.create(750, 220, 'ground');
 
     // The player and its settings
     this.player = this.physics.add.sprite(100, 450, 'dude');
@@ -121,26 +121,28 @@ export class GameScene extends Phaser.Scene {
   }
 
   public update() {
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (this.gameOver) {
       return;
     }
+    const speed = 125;
+    if (this.cursors === undefined) return;
 
-    if (this.cursors.left.isDown === true) {
-      this.player.setVelocityX(-160);
-
+    if (this.cursors.left?.isDown === true) {
+      this.player.setVelocity(-speed, 0);
       this.player.anims.play('left', true);
-    } else if (this.cursors.right.isDown === true) {
-      this.player.setVelocityX(160);
-
+    } else if (this.cursors.right?.isDown === true) {
+      this.player.setVelocity(speed, 0);
       this.player.anims.play('right', true);
-    } else {
-      this.player.setVelocityX(0);
-
+    } else if (this.cursors.up?.isDown === true) {
+      this.player.setVelocity(0, -speed);
       this.player.anims.play('turn');
-    }
-
-    if (this.cursors.up.isDown === true && this.player.body.touching.down === true) {
-      this.player.setVelocityY(-330);
+    } else if (this.cursors.down?.isDown === true) {
+      this.player.setVelocity(0, speed);
+      this.player.anims.play('turn');
+    } else {
+      this.player.anims.play('turn');
+      this.player.setVelocity(0, 0);
     }
   }
 
@@ -187,26 +189,26 @@ export class GameScene extends Phaser.Scene {
 
   // @ts-ignore-next-line
   private collectStar(player: any, star: any) {
-    // star.disableBody(true, true);
-    //
-    // //  Add and update the score
-    // this.score += 10;
-    // this.scoreText.setText(`Score: ${this.score}`);
-    //
-    // if (this.stars.countActive(true) === 0) {
-    //   //  A new batch of stars to collect
-    //   this.stars.children.iterate(function (child: any) {
-    //     child.enableBody(true, child.x, 0, true, true);
-    //   });
-    //
-    //   const x = player.x < 400 ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
-    //
-    //   const bomb = this.bombs.create(x, 16, 'bomb');
-    //   bomb.setBounce(1);
-    //   bomb.setCollideWorldBounds(true);
-    //   bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
-    //   bomb.allowGravity = false;
-    // }
+    star.disableBody(true, true);
+
+    //  Add and update the score
+    this.score += 10;
+    this.scoreText.setText(`Score: ${this.score}`);
+
+    if (this.stars.countActive(true) === 0) {
+      //  A new batch of stars to collect
+      this.stars.children.iterate(function (child: any) {
+        child.enableBody(true, child.x, 0, true, true);
+      });
+
+      const x = player.x < 400 ? Phaser.Math.Between(400, 800) : Phaser.Math.Between(0, 400);
+
+      const bomb = this.bombs.create(x, 16, 'bomb');
+      bomb.setBounce(1);
+      bomb.setCollideWorldBounds(true);
+      bomb.setVelocity(Phaser.Math.Between(-200, 200), 20);
+      bomb.allowGravity = false;
+    }
   }
 
   addNewPlayer(payload: PlayerJoinedGamePayload) {
