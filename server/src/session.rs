@@ -9,6 +9,7 @@ use serde_json::json;
 
 use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, Message};
 use crate::server::WsGameServer;
+use std::ops::Deref;
 use std::time::{Duration, Instant};
 
 #[derive(Default)]
@@ -192,10 +193,12 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerSession {
                                 self.send_msg(&format!("Event PlayerState:{}", &json.to_string()));
                             }
                         }
+                        Some("Event Ping") => {
+                            ctx.text(msg);
+                        }
                         _ => ctx.text(format!("!!! unknown event: {:?}", msg)),
                     }
                 }
-                self.send_msg(msg);
             }
             ws::Message::Close(reason) => {
                 ctx.close(reason);

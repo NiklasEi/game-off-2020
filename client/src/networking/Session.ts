@@ -18,6 +18,7 @@ export class Session {
   private secret?: string;
   private gameInitialized = false;
   private readonly playerJoinedEvents: PlayerJoinedGamePayload[] = [];
+  private readonly pingIntervalId;
 
   constructor(gameScene: GameScene) {
     this.gameScene = gameScene;
@@ -28,6 +29,11 @@ export class Session {
 
     this.socket = new WebSocket(wsUri);
     this.setEvents();
+    this.pingIntervalId = setInterval(this.getCurrentPing.bind(this), 2000);
+  }
+
+  private getCurrentPing() {
+    this.sendEvent(MultiplayerEvent.PING, { timestamp: new Date().getUTCMilliseconds() });
   }
 
   private setEvents() {
@@ -114,6 +120,11 @@ export class Session {
       case MultiplayerEvent.PLAYER_STATE: {
         const state = payload as PlayerStateInboundPayload;
         this.gameScene.updatePlayer(state);
+        break;
+      }
+      case MultiplayerEvent.PING: {
+        const state = payload as { timestamp: number };
+        this.gameScene.updatePing(new Date().getUTCMilliseconds() - state.timestamp);
         break;
       }
 

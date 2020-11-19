@@ -2,7 +2,8 @@ export enum MultiplayerEvent {
   GAME_STATE = 'GameState',
   PLAYER_STATE = 'PlayerState',
   ROOM_LEADER = 'RoomLeader',
-  PLAYER_JOINED_GAME = 'PlayerJoinedGame'
+  PLAYER_JOINED_GAME = 'PlayerJoinedGame',
+  PING = 'Ping'
 }
 
 export interface PlayerStateInboundPayload extends PlayerStateOutboundPayload {

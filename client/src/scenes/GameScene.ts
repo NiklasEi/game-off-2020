@@ -19,6 +19,7 @@ export class GameScene extends Phaser.Scene {
   private readonly players: any[] = [];
   private session?: Session;
   private keys!: Control;
+  private ping!: Phaser.GameObjects.Text;
 
   constructor() {
     super('game');
@@ -40,6 +41,7 @@ export class GameScene extends Phaser.Scene {
     map.createStaticLayer('background', tileset);
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
+    this.ping = this.add.text(725, 10, '');
     // The player and its settings
     this.spaceShip = this.physics.add.image(100, 450, 'spaceship');
 
@@ -134,5 +136,10 @@ export class GameScene extends Phaser.Scene {
 
   public updateGameState(payload: GameStatePayload) {
     console.log(`update state ${payload}`);
+  }
+
+  public updatePing(pingInMilliseconds: number) {
+    console.log(pingInMilliseconds)
+    this.ping.setText(`${pingInMilliseconds}ms`);
   }
 }
