@@ -139,7 +139,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   public updatePing(pingInMilliseconds: number) {
-    console.log(pingInMilliseconds)
     this.ping.setText(`${pingInMilliseconds}ms`);
   }
 }
