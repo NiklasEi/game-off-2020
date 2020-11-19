@@ -4,6 +4,13 @@ import { GameStatePayload, PlayerJoinedGamePayload, PlayerStateInboundPayload } 
 import { tileSize } from '../utils/constants';
 import Vector2 = Phaser.Math.Vector2;
 
+interface Control {
+  W: any;
+  A: any;
+  S: any;
+  D: any;
+}
+
 export class GameScene extends Phaser.Scene {
   private spaceShip!: Phaser.Physics.Arcade.Image;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
@@ -11,6 +18,7 @@ export class GameScene extends Phaser.Scene {
   private angularVelocity: number = 0;
   private readonly players: any[] = [];
   private session?: Session;
+  private keys!: Control;
 
   constructor() {
     super('game');
@@ -30,6 +38,7 @@ export class GameScene extends Phaser.Scene {
     const map = this.make.tilemap({ key: 'space' });
     const tileset = map.addTilesetImage('space', 'spacetiles', tileSize, tileSize, 1, 2);
     map.createStaticLayer('background', tileset);
+    this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
     // The player and its settings
     this.spaceShip = this.physics.add.image(100, 450, 'spaceship');
@@ -52,19 +61,20 @@ export class GameScene extends Phaser.Scene {
       return;
     }
     const speed = 125;
-    if (this.cursors === undefined) return;
+    const cursors = this.cursors;
+    if (cursors === undefined) return;
 
     const velocityVector = new Vector2(speed, 0).rotate(this.spaceShip.rotation);
 
-    if (this.cursors.left?.isDown === true) {
+    if (cursors.left?.isDown || this.keys.A.isDown) {
       this.angularVelocity = this.angularVelocity - 20;
-    } else if (this.cursors.right?.isDown === true) {
+    } else if (cursors.right?.isDown || this.keys.D.isDown) {
       this.angularVelocity = this.angularVelocity + 20;
     }
-    if (this.cursors.up?.isDown === true) {
+    if (cursors.up?.isDown || this.keys.W.isDown) {
       this.spaceShip.setVelocity(velocityVector.x, velocityVector.y);
       this.spaceShip.setDrag(0);
-    } else if (this.cursors.down?.isDown === true) {
+    } else if (cursors.down?.isDown || this.keys.S.isDown) {
       this.spaceShip.setDrag(100);
     } else {
       this.spaceShip.setDrag(0);
