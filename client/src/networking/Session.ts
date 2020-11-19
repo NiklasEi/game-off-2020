@@ -9,7 +9,7 @@ import {
   SignedGameStatePayload
 } from './MultiplayerEvent';
 
-declare const __SERVER_BASE_HOST: string;
+declare const SERVER_BASE_HOST: string;
 
 export class Session {
   private socket: WebSocket;
@@ -23,8 +23,8 @@ export class Session {
     this.gameScene = gameScene;
     const { location } = window;
     const proto = location.protocol.startsWith('https') ? 'wss' : 'ws';
-    /*global __SERVER_BASE_HOST */
-    const wsUri = `${proto}://${__SERVER_BASE_HOST}/ws/`;
+    /* global SERVER_BASE_HOST */
+    const wsUri = `${proto}://${SERVER_BASE_HOST}/ws/`;
 
     this.socket = new WebSocket(wsUri);
     this.setEvents();

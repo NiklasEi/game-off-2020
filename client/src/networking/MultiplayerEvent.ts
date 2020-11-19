@@ -16,8 +16,7 @@ export interface SignedGameStatePayload extends GameStatePayload {
 }
 
 export interface GameStatePayload {
-  stars: EntityWithId[];
-  bombs: EntityWithId[];
+  _stuff: any;
 }
 
 export interface RoomLeaderPayload {
@@ -35,6 +34,8 @@ export interface EntityWithId extends Entity {
 export interface Entity {
   position: Position;
   velocity: Velocity;
+  rotation: number;
+  angularVelocity: number;
 }
 
 interface Velocity {
