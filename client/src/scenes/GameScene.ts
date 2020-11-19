@@ -19,7 +19,7 @@ export class GameScene extends Phaser.Scene {
   private readonly players: any[] = [];
   private session?: Session;
   private keys!: Control;
-  private ping!: Phaser.GameObjects.Text;
+  private ping?: Phaser.GameObjects.Text;
 
   constructor() {
     super('game');
@@ -139,6 +139,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   public updatePing(pingInMilliseconds: number) {
-    this.ping.setText(`${pingInMilliseconds}ms`);
+    this.ping?.setText(`${pingInMilliseconds}ms`);
   }
 }
