@@ -8,6 +8,7 @@ use actix_broker::BrokerSubscribe;
 
 use std::collections::HashMap;
 
+use crate::events::{GameStateEvent, MultiplayerEvent, PlayerJoinedGameEvent, RoomLeaderEvent};
 use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message};
 
 type Client = Recipient<Message>;
@@ -40,8 +41,14 @@ impl WsGameServer {
             }
         }
         game.players.iter().for_each(|(player_id, _player)| {
-            let join_msg = format!("Event PlayerJoinedGame:{{\"playerId\":\"{}\"}}", player_id);
-            client.do_send(Message(join_msg)).ok();
+            client
+                .do_send(Message(
+                    PlayerJoinedGameEvent {
+                        player_id: player_id.to_owned(),
+                    }
+                    .to_message(),
+                ))
+                .ok();
         });
         game.players.insert(id, client);
         id
@@ -88,7 +95,10 @@ impl WsGameServer {
             .collect::<String>();
         self.send_message_to_player(
             player_id,
-            &format!("Event RoomLeader:{{\"secret\":\"{}\"}}", secret),
+            &RoomLeaderEvent {
+                secret: secret.clone(),
+            }
+            .to_message(),
             player_id,
         )
         .expect("failed to send initialisation message for game room");
@@ -118,7 +128,6 @@ impl Handler<JoinGame> for WsGameServer {
         let JoinGame { game_name, player } = msg;
 
         let id = self.add_player_to_game(&game_name, None, player);
-        let join_msg = format!("Event PlayerJoinedGame:{{\"playerId\":\"{}\"}}", id);
 
         let game = self.games.get(&game_name).expect("Failed to get room");
         if game.leader.is_none() {
@@ -126,7 +135,14 @@ impl Handler<JoinGame> for WsGameServer {
             self.make_player_leader(id, String::from(&game_name));
         }
 
-        self.send_message_to_game(&game_name, &join_msg, id);
+        self.send_message_to_game(
+            &game_name,
+            &PlayerJoinedGameEvent {
+                player_id: id.clone(),
+            }
+            .to_message(),
+            id,
+        );
         MessageResult(id)
     }
 }
@@ -159,7 +175,10 @@ impl Handler<GameState> for WsGameServer {
             if room.leader == Some(msg.sender_id) && room.secret == Some(msg.secret) {
                 self.send_message_to_game(
                     &msg.game_name,
-                    &format!("Event GameState:{}", &msg.payload.to_string()),
+                    &GameStateEvent {
+                        payload: msg.payload,
+                    }
+                    .to_message(),
                     msg.sender_id,
                 );
             }

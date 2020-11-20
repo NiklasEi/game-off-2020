@@ -4,6 +4,7 @@ use log::info;
 use actix_web::{middleware, web, App, Error, HttpRequest, HttpResponse, HttpServer};
 use actix_web_actors::ws;
 
+mod events;
 mod message;
 mod server;
 mod session;

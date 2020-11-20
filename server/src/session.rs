@@ -9,7 +9,6 @@ use serde_json::json;
 
 use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, Message};
 use crate::server::WsGameServer;
-use std::ops::Deref;
 use std::time::{Duration, Instant};
 
 #[derive(Default)]
