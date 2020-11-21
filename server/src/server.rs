@@ -8,7 +8,9 @@ use actix_broker::BrokerSubscribe;
 
 use std::collections::HashMap;
 
-use crate::events::{GameStateEvent, MultiplayerEvent, PlayerJoinedGameEvent, RoomLeaderEvent};
+use crate::events::{
+    GameStateEvent, MultiplayerEvent, PlayerJoinedGameEvent, PlayerLeftGameEvent, RoomLeaderEvent,
+};
 use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message};
 
 type Client = Recipient<Message>;
@@ -152,16 +154,27 @@ impl Handler<LeaveGame> for WsGameServer {
 
     fn handle(&mut self, msg: LeaveGame, _ctx: &mut Self::Context) {
         if let Some(room) = self.games.get_mut(&msg.game_name) {
-            room.players.remove(&msg.player_id);
-            if room.leader == Some(msg.player_id) {
-                if room.players.len() < 1 {
-                    self.games.remove(&msg.game_name);
-                    return;
-                }
+            let removed_player = room.players.remove(&msg.player_id);
+            if removed_player.is_some() {
+                info!("Removing {} from game {:?}", msg.player_id, msg.game_name);
+                if room.leader == Some(msg.player_id) {
+                    if room.players.len() < 1 {
+                        self.games.remove(&msg.game_name);
+                        return;
+                    }
 
-                if let Some((&player_id, _client)) = room.players.iter().next() {
-                    self.make_player_leader(player_id, msg.game_name);
+                    if let Some((&player_id, _client)) = room.players.iter().next() {
+                        self.make_player_leader(player_id, msg.game_name.clone());
+                    }
                 }
+                self.send_message_to_game(
+                    &msg.game_name,
+                    &PlayerLeftGameEvent {
+                        player_id: msg.player_id,
+                    }
+                    .to_message(),
+                    msg.player_id,
+                );
             }
         }
     }

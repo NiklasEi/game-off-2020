@@ -3,6 +3,7 @@ export enum MultiplayerEvent {
   PLAYER_STATE = 'PlayerState',
   ROOM_LEADER = 'RoomLeader',
   PLAYER_JOINED_GAME = 'PlayerJoinedGame',
+  PLAYER_LEFT_GAME = 'PlayerLeftGame',
   PING = 'Ping'
 }
 
@@ -25,6 +26,10 @@ export interface RoomLeaderPayload {
 }
 
 export interface PlayerJoinedGamePayload {
+  playerId: string;
+}
+
+export interface PlayerLeftGamePayload {
   playerId: string;
 }
 

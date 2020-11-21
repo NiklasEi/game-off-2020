@@ -9,6 +9,11 @@ pub struct PlayerJoinedGameEvent {
 }
 
 #[derive(Default, Debug)]
+pub struct PlayerLeftGameEvent {
+    pub player_id: usize,
+}
+
+#[derive(Default, Debug)]
 pub struct GameStateEvent {
     pub payload: serde_json::Value,
 }
@@ -27,6 +32,15 @@ impl MultiplayerEvent for PlayerJoinedGameEvent {
     fn to_message(&self) -> String {
         format!(
             "Event PlayerJoinedGame:{{\"playerId\":\"{}\"}}",
+            self.player_id
+        )
+    }
+}
+
+impl MultiplayerEvent for PlayerLeftGameEvent {
+    fn to_message(&self) -> String {
+        format!(
+            "Event PlayerLeftGame:{{\"playerId\":\"{}\"}}",
             self.player_id
         )
     }

@@ -40,13 +40,10 @@ impl PlayerSession {
     pub fn join_game(&mut self, game_name: &str, ctx: &mut ws::WebsocketContext<Self>) {
         let game_name = game_name.to_owned();
 
-        // First send a leave message for the current room
         let leave_msg = LeaveGame {
             game_name: self.game_name.clone(),
             player_id: self.id,
         };
-
-        // issue_sync comes from having the `BrokerIssue` trait in scope.
         self.issue_system_sync(leave_msg, ctx);
 
         // Then send a join message for the new room
@@ -68,22 +65,6 @@ impl PlayerSession {
             })
             .wait(ctx);
     }
-
-    // pub fn list_games(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
-    //     WsGameServer::from_registry()
-    //         .send(ListGames)
-    //         .into_actor(self)
-    //         .then(|res, _, ctx| {
-    //             if let Ok(rooms) = res {
-    //                 for room in rooms {
-    //                     ctx.text(room);
-    //                 }
-    //             }
-    //
-    //             fut::ready(())
-    //         })
-    //         .wait(ctx);
-    // }
 
     pub fn send_msg(&self, msg: &str) {
         let msg = GameMessage {
@@ -112,7 +93,14 @@ impl PlayerSession {
         ctx.run_interval(self.hb.interval, |act, ctx| {
             // check client heartbeats
             if Instant::now().duration_since(act.hb.last_client_hb) > act.hb.timeout {
-                println!("Websocket Client heartbeat timed out, disconnecting!");
+                println!("Websocket Client heartbeat timed out. Leaving game and disconnecting!");
+                act.issue_system_sync(
+                    LeaveGame {
+                        game_name: act.game_name.clone(),
+                        player_id: act.id.clone(),
+                    },
+                    ctx,
+                );
                 ctx.stop();
                 return;
             }
@@ -130,7 +118,14 @@ impl Actor for PlayerSession {
         self.join_game("MainGame", ctx);
     }
 
-    fn stopped(&mut self, _ctx: &mut Self::Context) {
+    fn stopped(&mut self, ctx: &mut Self::Context) {
+        self.issue_system_sync(
+            LeaveGame {
+                game_name: self.game_name.clone(),
+                player_id: self.id.clone(),
+            },
+            ctx,
+        );
         info!(
             "WsGameSession closed for {} in game {}",
             self.id, self.game_name

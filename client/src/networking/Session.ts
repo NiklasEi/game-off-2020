@@ -3,6 +3,7 @@ import {
   GameStatePayload,
   MultiplayerEvent,
   PlayerJoinedGamePayload,
+  PlayerLeftGamePayload,
   PlayerStateInboundPayload,
   PlayerStateOutboundPayload,
   RoomLeaderPayload,
@@ -18,6 +19,7 @@ export class Session {
   private secret?: string;
   private gameInitialized = false;
   private readonly playerJoinedEvents: PlayerJoinedGamePayload[] = [];
+  private readonly playerLeftEvents: PlayerLeftGamePayload[] = [];
   private readonly pingIntervalId;
 
   constructor(gameScene: GameScene) {
@@ -63,6 +65,7 @@ export class Session {
   public initializedGame() {
     this.gameInitialized = true;
     this.playerJoinedEvents.forEach((event) => this.gameScene.addNewPlayer(event));
+    this.playerLeftEvents.forEach((event) => this.gameScene.removePlayer(event));
   }
 
   private sendEvent(event: MultiplayerEvent, payload: any) {
@@ -114,6 +117,15 @@ export class Session {
           this.gameScene.addNewPlayer(state);
         } else {
           this.playerJoinedEvents.push(state);
+        }
+        break;
+      }
+      case MultiplayerEvent.PLAYER_LEFT_GAME: {
+        const state = payload as PlayerLeftGamePayload;
+        if (this.gameInitialized) {
+          this.gameScene.removePlayer(state);
+        } else {
+          this.playerLeftEvents.push(state);
         }
         break;
       }

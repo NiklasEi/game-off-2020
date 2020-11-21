@@ -1,6 +1,11 @@
 import * as Phaser from 'phaser';
 import { Session } from '../networking/Session';
-import { GameStatePayload, PlayerJoinedGamePayload, PlayerStateInboundPayload } from '../networking/MultiplayerEvent';
+import {
+  GameStatePayload,
+  PlayerJoinedGamePayload,
+  PlayerLeftGamePayload,
+  PlayerStateInboundPayload
+} from '../networking/MultiplayerEvent';
 import { tileSize } from '../utils/constants';
 import Vector2 = Phaser.Math.Vector2;
 
@@ -16,7 +21,7 @@ export class GameScene extends Phaser.Scene {
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly gameOver = false;
   private angularVelocity: number = 0;
-  private readonly players: any[] = [];
+  private players: any[] = [];
   private session?: Session;
   private keys!: Control;
   private ping?: Phaser.GameObjects.Text;
@@ -120,6 +125,17 @@ export class GameScene extends Phaser.Scene {
     player.setCollideWorldBounds(true);
     player.name = payload.playerId;
     this.players.push(player);
+  }
+
+  removePlayer(payload: PlayerLeftGamePayload) {
+    console.log(`Remove player ${payload.playerId}`);
+    this.players = this.players.filter((player) => {
+      if (player.name === payload.playerId) {
+        player.destroy();
+        return true;
+      }
+      return false;
+    });
   }
 
   updatePlayer(payload: PlayerStateInboundPayload) {
