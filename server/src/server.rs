@@ -6,12 +6,16 @@ use log::info;
 use actix::prelude::*;
 use actix_broker::BrokerSubscribe;
 
+mod events;
+mod game_objects;
+mod map;
+
 use std::collections::HashMap;
 
-use crate::events::{
+use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message};
+use events::{
     GameStateEvent, MultiplayerEvent, PlayerJoinedGameEvent, PlayerLeftGameEvent, RoomLeaderEvent,
 };
-use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message};
 
 type Client = Recipient<Message>;
 

@@ -9,6 +9,7 @@ import {
   RoomLeaderPayload,
   SignedGameStatePayload
 } from './MultiplayerEvent';
+import { sceneEvents } from '../events/EventCenter';
 
 declare const SERVER_BASE_HOST: string;
 
@@ -136,7 +137,7 @@ export class Session {
       }
       case MultiplayerEvent.PING: {
         const state = payload as { timestamp: number };
-        this.gameScene.updatePing(new Date().getUTCMilliseconds() - state.timestamp);
+        sceneEvents.emit('update-ping', new Date().getUTCMilliseconds() - state.timestamp);
         break;
       }
 

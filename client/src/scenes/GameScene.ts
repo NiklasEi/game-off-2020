@@ -24,7 +24,6 @@ export class GameScene extends Phaser.Scene {
   private players: any[] = [];
   private session?: Session;
   private keys!: Control;
-  private ping?: Phaser.GameObjects.Text;
 
   constructor() {
     super('game');
@@ -40,19 +39,19 @@ export class GameScene extends Phaser.Scene {
   }
 
   public create() {
+    this.scene.run('gameHud');
     // prepare map
     const map = this.make.tilemap({ key: 'space' });
     const tileset = map.addTilesetImage('space', 'spacetiles', tileSize, tileSize, 1, 2);
     map.createStaticLayer('background', tileset);
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
-    this.ping = this.add.text(725, 10, '');
     // The player and its settings
     this.spaceShip = this.physics.add.image(100, 450, 'spaceship');
+    this.cameras.main.startFollow(this.spaceShip, true);
 
     //  Player physics properties. Give the little guy a slight bounce.
     this.spaceShip.setBounce(0.2);
-    this.spaceShip.setCollideWorldBounds(true);
     this.spaceShip.setAngularDrag(50);
 
     //  Input Events
@@ -122,7 +121,6 @@ export class GameScene extends Phaser.Scene {
     console.log(`New player ${payload.playerId}`);
     const player = this.physics.add.image(100, 450, 'spaceship');
     player.setBounce(0.2);
-    player.setCollideWorldBounds(true);
     player.name = payload.playerId;
     this.players.push(player);
   }
@@ -152,9 +150,5 @@ export class GameScene extends Phaser.Scene {
 
   public updateGameState(payload: GameStatePayload) {
     console.log(`update state ${payload}`);
-  }
-
-  public updatePing(pingInMilliseconds: number) {
-    this.ping?.setText(`${pingInMilliseconds}ms`);
   }
 }
