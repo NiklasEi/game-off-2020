@@ -13,3 +13,9 @@ impl GameMap {
         }
     }
 }
+
+impl Default for GameMap {
+    fn default() -> Self {
+        GameMap::create_random()
+    }
+}

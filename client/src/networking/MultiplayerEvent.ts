@@ -4,6 +4,7 @@ export enum MultiplayerEvent {
   ROOM_LEADER = 'RoomLeader',
   PLAYER_JOINED_GAME = 'PlayerJoinedGame',
   PLAYER_LEFT_GAME = 'PlayerLeftGame',
+  SET_MAP = 'SetMap',
   PING = 'Ping'
 }
 
@@ -19,6 +20,10 @@ export interface SignedGameStatePayload extends GameStatePayload {
 
 export interface GameStatePayload {
   _stuff: any;
+}
+
+export interface SetMapPayload {
+  startPoint: Position;
 }
 
 export interface RoomLeaderPayload {
@@ -44,11 +49,7 @@ export interface Entity {
   angularVelocity: number;
 }
 
-interface Velocity {
-  x: number;
-  y: number;
-}
-
+type Velocity = Position;
 interface Position {
   x: number;
   y: number;

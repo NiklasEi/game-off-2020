@@ -13,6 +13,8 @@ mod map;
 use std::collections::HashMap;
 
 use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message};
+use crate::server::events::SetMapGameEvent;
+use crate::server::game_objects::GameMap;
 use events::{
     GameStateEvent, MultiplayerEvent, PlayerJoinedGameEvent, PlayerLeftGameEvent, RoomLeaderEvent,
 };
@@ -24,6 +26,7 @@ pub struct Game {
     players: HashMap<usize, Client>,
     leader: Option<usize>,
     secret: Option<String>,
+    map: GameMap,
 }
 
 #[derive(Default)]
@@ -78,7 +81,7 @@ impl WsGameServer {
         Some(())
     }
 
-    fn send_message_to_player(&mut self, recipient: usize, msg: &str, _src: usize) -> Option<()> {
+    fn send_message_to_player(&self, recipient: usize, msg: &str) -> Option<()> {
         for (_game_name, game) in self.games.iter() {
             if game.players.contains_key(&recipient) {
                 let player = game
@@ -105,7 +108,6 @@ impl WsGameServer {
                 secret: secret.clone(),
             }
             .to_message(),
-            player_id,
         )
         .expect("failed to send initialisation message for game room");
         let mut game = self.games.remove(&game_name)?;
@@ -136,11 +138,11 @@ impl Handler<JoinGame> for WsGameServer {
         let id = self.add_player_to_game(&game_name, None, player);
 
         let game = self.games.get(&game_name).expect("Failed to get room");
+        self.send_message_to_player(id, &SetMapGameEvent { map: &game.map }.to_message());
         if game.leader.is_none() {
             info!("Making {} leader of game {:?}", id, game);
             self.make_player_leader(id, String::from(&game_name));
         }
-
         self.send_message_to_game(
             &game_name,
             &PlayerJoinedGameEvent {

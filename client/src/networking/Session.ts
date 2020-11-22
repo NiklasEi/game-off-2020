@@ -7,6 +7,7 @@ import {
   PlayerStateInboundPayload,
   PlayerStateOutboundPayload,
   RoomLeaderPayload,
+  SetMapPayload,
   SignedGameStatePayload
 } from './MultiplayerEvent';
 import { sceneEvents } from '../events/EventCenter';
@@ -36,7 +37,7 @@ export class Session {
   }
 
   private getCurrentPing() {
-    this.sendEvent(MultiplayerEvent.PING, { timestamp: new Date().getUTCMilliseconds() });
+    this.sendEvent(MultiplayerEvent.PING, { timestamp: new Date().valueOf() });
   }
 
   private setEvents() {
@@ -95,6 +96,9 @@ export class Session {
       return;
     }
     const event = matches[1];
+    if (event !== MultiplayerEvent.PING) {
+      console.log(message);
+    }
     const payload = JSON.parse(message.replace(/^[a-zA-Z]+:/, ''));
     switch (event) {
       case MultiplayerEvent.GAME_STATE: {
@@ -135,9 +139,14 @@ export class Session {
         this.gameScene.updatePlayer(state);
         break;
       }
+      case MultiplayerEvent.SET_MAP: {
+        const state = payload as SetMapPayload;
+        this.gameScene.setMap(state);
+        break;
+      }
       case MultiplayerEvent.PING: {
         const state = payload as { timestamp: number };
-        sceneEvents.emit('update-ping', new Date().getUTCMilliseconds() - state.timestamp);
+        sceneEvents.emit('update-ping', new Date().valueOf() - state.timestamp);
         break;
       }
 

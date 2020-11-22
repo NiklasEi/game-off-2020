@@ -1,3 +1,5 @@
+use crate::server::game_objects::GameMap;
+
 #[derive(Default, Debug)]
 pub struct RoomLeaderEvent {
     pub secret: String,
@@ -11,6 +13,11 @@ pub struct PlayerJoinedGameEvent {
 #[derive(Default, Debug)]
 pub struct PlayerLeftGameEvent {
     pub player_id: usize,
+}
+
+#[derive(Debug)]
+pub struct SetMapGameEvent<'a> {
+    pub map: &'a GameMap,
 }
 
 #[derive(Default, Debug)]
@@ -42,6 +49,15 @@ impl MultiplayerEvent for PlayerLeftGameEvent {
         format!(
             "Event PlayerLeftGame:{{\"playerId\":\"{}\"}}",
             self.player_id
+        )
+    }
+}
+
+impl MultiplayerEvent for SetMapGameEvent<'_> {
+    fn to_message(&self) -> String {
+        format!(
+            "Event SetMap:{{\"startPoint\":{{\"x\": {},\"y\": {}}}}}",
+            self.map.start_point.x, self.map.start_point.y
         )
     }
 }

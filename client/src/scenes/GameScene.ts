@@ -4,7 +4,8 @@ import {
   GameStatePayload,
   PlayerJoinedGamePayload,
   PlayerLeftGamePayload,
-  PlayerStateInboundPayload
+  PlayerStateInboundPayload,
+  SetMapPayload
 } from '../networking/MultiplayerEvent';
 import { tileSize } from '../utils/constants';
 import Vector2 = Phaser.Math.Vector2;
@@ -194,5 +195,9 @@ export class GameScene extends Phaser.Scene {
 
   public updateGameState(payload: GameStatePayload) {
     console.log(`update state ${payload}`);
+  }
+
+  public setMap(payload: SetMapPayload) {
+    console.log(`set map ${payload}`);
   }
 }
