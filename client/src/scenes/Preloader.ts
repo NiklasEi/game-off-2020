@@ -13,6 +13,7 @@ export default class Preloader extends Phaser.Scene {
     this.load.image('sky', 'assets/sky.png');
     this.load.image('spaceship', 'assets/spaceship.png');
     this.load.json('spaceship-shape', 'assets/spaceship.json');
+    this.load.image('fire', 'assets/particles/fire.png');
 
     this.load.image('start-button', 'assets/mainMenu/start.jpeg');
     this.load.image('restart-button', 'assets/mainMenu/restart.jpeg');

@@ -18,8 +18,9 @@ interface Control {
 
 export class GameScene extends Phaser.Scene {
   private spaceShip!: Phaser.Physics.Matter.Image;
+  private spaceShipEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private readonly gameOver = false;
+  private readonly gameOver: boolean = false;
   private angularVelocity: number = 0;
   private players: any[] = [];
   private session?: Session;
@@ -58,6 +59,19 @@ export class GameScene extends Phaser.Scene {
     this.matter.world.setBounds(0, 0, 3200, 3200);
     this.cameras.main.startFollow(this.spaceShip, true);
 
+    const particles = this.add.particles('fire');
+    this.spaceShipEmitter = particles.createEmitter({
+      speed: 10,
+      on: false,
+      lifespan: 400,
+      alpha: 1000,
+      maxParticles: 100,
+      scale: { start: 1.0, end: 0 },
+      blendMode: 'ADD'
+    });
+
+    this.spaceShipEmitter.startFollow(this.spaceShip);
+
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -66,20 +80,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   public update() {
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (this.gameOver) {
       return;
     }
-    const speed = 10;
-    const speedDelta = 1;
     const cursors = this.cursors;
     if (cursors === undefined) return;
-    const angularDelta = 0.001;
+
+    const speedUpperThreshold = 10;
+    const speedDelta = 0.1;
     const currentSpeed = this.spaceShip.body.velocity;
+    const totalCurrentSpeed = Math.sqrt(currentSpeed.x ** 2 + currentSpeed.y ** 2);
+    const velocityDeltaVector = new Vector2(speedDelta, 0).rotate(this.spaceShip.rotation);
+
+    const angularDelta = 0.001;
     const angularVelocityLowerThreshold = 0.01;
     const angularVelocityUpperThreshold = 0.2;
-
-    const velocityVector = new Vector2(speed, 0).rotate(this.spaceShip.rotation);
+    this.spaceShipEmitter.on = false;
 
     if (cursors.left?.isDown || this.keys.A.isDown) {
       this.angularVelocity = this.angularVelocity - angularDelta;
@@ -87,14 +103,14 @@ export class GameScene extends Phaser.Scene {
       this.angularVelocity = this.angularVelocity + angularDelta;
     }
     if (cursors.up?.isDown || this.keys.W.isDown) {
-      this.spaceShip.setVelocity(velocityVector.x, velocityVector.y);
+      this.spaceShipEmitter.on = true;
+      this.spaceShip.setVelocity(currentSpeed.x + velocityDeltaVector.x, currentSpeed.y + velocityDeltaVector.y);
     } else if (cursors.down?.isDown || this.keys.S.isDown) {
-      const totalSpeed = Math.sqrt(currentSpeed.x ** 2 + currentSpeed.y ** 2);
-      if (totalSpeed < speedDelta) {
+      if (totalCurrentSpeed < speedDelta) {
         this.spaceShip.setVelocity(0, 0);
       } else {
-        const ySpeedDelta = speedDelta * (Math.abs(currentSpeed.y) / totalSpeed);
-        const xSpeedDelta = speedDelta * (Math.abs(currentSpeed.x) / totalSpeed);
+        const ySpeedDelta = speedDelta * (Math.abs(currentSpeed.y) / totalCurrentSpeed);
+        const xSpeedDelta = speedDelta * (Math.abs(currentSpeed.x) / totalCurrentSpeed);
         this.spaceShip.setVelocity(
           currentSpeed.x > 0 ? currentSpeed.x - xSpeedDelta : currentSpeed.x + xSpeedDelta,
           currentSpeed.y > 0 ? currentSpeed.y - ySpeedDelta : currentSpeed.y + ySpeedDelta
@@ -115,6 +131,12 @@ export class GameScene extends Phaser.Scene {
       this.angularVelocity = -angularVelocityUpperThreshold;
     }
     this.spaceShip.setAngularVelocity(this.angularVelocity);
+    if (totalCurrentSpeed > speedUpperThreshold) {
+      this.spaceShip.setVelocity(
+        currentSpeed.x * (speedUpperThreshold / totalCurrentSpeed),
+        currentSpeed.y * (speedUpperThreshold / totalCurrentSpeed)
+      );
+    }
   }
 
   private sendGameEvents() {
