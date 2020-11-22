@@ -17,7 +17,7 @@ interface Control {
 }
 
 export class GameScene extends Phaser.Scene {
-  private spaceShip!: Phaser.Physics.Arcade.Image;
+  private spaceShip!: Phaser.Physics.Matter.Image;
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly gameOver = false;
   private angularVelocity: number = 0;
@@ -47,12 +47,16 @@ export class GameScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
     // The player and its settings
-    this.spaceShip = this.physics.add.image(100, 450, 'spaceship');
+    const spaceShipShape = this.cache.json.get('spaceship-shape');
+    console.log(spaceShipShape.spaceship);
+    this.spaceShip = this.matter.add.image(100, 450, 'spaceship', undefined, {
+      vertices: spaceShipShape.spaceship,
+      friction: 0,
+      frictionStatic: 0,
+      frictionAir: 0
+    });
+    this.matter.world.setBounds(0, 0, 3200, 3200);
     this.cameras.main.startFollow(this.spaceShip, true);
-
-    //  Player physics properties. Give the little guy a slight bounce.
-    this.spaceShip.setBounce(0.2);
-    this.spaceShip.setAngularDrag(50);
 
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
@@ -66,36 +70,49 @@ export class GameScene extends Phaser.Scene {
     if (this.gameOver) {
       return;
     }
-    const speed = 125;
+    const speed = 10;
+    const speedDelta = 1;
     const cursors = this.cursors;
     if (cursors === undefined) return;
+    const angularDelta = 0.001;
+    const currentSpeed = this.spaceShip.body.velocity;
+    const angularVelocityLowerThreshold = 0.01;
+    const angularVelocityUpperThreshold = 0.2;
 
     const velocityVector = new Vector2(speed, 0).rotate(this.spaceShip.rotation);
 
     if (cursors.left?.isDown || this.keys.A.isDown) {
-      this.angularVelocity = this.angularVelocity - 20;
+      this.angularVelocity = this.angularVelocity - angularDelta;
     } else if (cursors.right?.isDown || this.keys.D.isDown) {
-      this.angularVelocity = this.angularVelocity + 20;
+      this.angularVelocity = this.angularVelocity + angularDelta;
     }
     if (cursors.up?.isDown || this.keys.W.isDown) {
       this.spaceShip.setVelocity(velocityVector.x, velocityVector.y);
-      this.spaceShip.setDrag(0);
     } else if (cursors.down?.isDown || this.keys.S.isDown) {
-      this.spaceShip.setDrag(100);
-    } else {
-      this.spaceShip.setDrag(0);
+      const totalSpeed = Math.sqrt(currentSpeed.x ** 2 + currentSpeed.y ** 2);
+      if (totalSpeed < speedDelta) {
+        this.spaceShip.setVelocity(0, 0);
+      } else {
+        const ySpeedDelta = speedDelta * (Math.abs(currentSpeed.y) / totalSpeed);
+        const xSpeedDelta = speedDelta * (Math.abs(currentSpeed.x) / totalSpeed);
+        this.spaceShip.setVelocity(
+          currentSpeed.x > 0 ? currentSpeed.x - xSpeedDelta : currentSpeed.x + xSpeedDelta,
+          currentSpeed.y > 0 ? currentSpeed.y - ySpeedDelta : currentSpeed.y + ySpeedDelta
+        );
+      }
+      if (this.angularVelocity > angularVelocityLowerThreshold) {
+        this.angularVelocity -= angularDelta;
+      } else if (this.angularVelocity < -angularVelocityLowerThreshold) {
+        this.angularVelocity += angularDelta;
+      } else {
+        this.angularVelocity = 0;
+      }
     }
-    if (this.angularVelocity > 200) {
-      this.angularVelocity = 200;
+    if (this.angularVelocity > angularVelocityUpperThreshold) {
+      this.angularVelocity = angularVelocityUpperThreshold;
     }
-    if (this.angularVelocity < -200) {
-      this.angularVelocity = -200;
-    }
-    const drag = this.angularVelocity > 0 ? -5 : 5;
-    if (Math.abs(this.angularVelocity) < 5) {
-      this.angularVelocity = 0;
-    } else {
-      this.angularVelocity += drag;
+    if (this.angularVelocity < -angularVelocityUpperThreshold) {
+      this.angularVelocity = -angularVelocityUpperThreshold;
     }
     this.spaceShip.setAngularVelocity(this.angularVelocity);
   }
@@ -119,8 +136,13 @@ export class GameScene extends Phaser.Scene {
 
   addNewPlayer(payload: PlayerJoinedGamePayload) {
     console.log(`New player ${payload.playerId}`);
-    const player = this.physics.add.image(100, 450, 'spaceship');
-    player.setBounce(0.2);
+    const spaceShipShape = this.cache.json.get('spaceship-shape');
+    const player = this.matter.add.image(100, 450, 'spaceship', undefined, {
+      vertices: spaceShipShape.spaceship,
+      friction: 0,
+      frictionStatic: 0,
+      frictionAir: 0
+    });
     player.name = payload.playerId;
     this.players.push(player);
   }
