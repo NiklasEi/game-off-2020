@@ -1,4 +1,4 @@
-import { GameScene } from '../scenes/GameScene';
+import {GameScene} from '../scenes/GameScene';
 import {
   GameStatePayload,
   MultiplayerEvent,
@@ -10,7 +10,7 @@ import {
   SetMapPayload,
   SignedGameStatePayload
 } from './MultiplayerEvent';
-import { sceneEvents } from '../events/EventCenter';
+import {sceneEvents} from '../events/EventCenter';
 
 declare const SERVER_BASE_HOST: string;
 
@@ -23,6 +23,7 @@ export class Session {
   private readonly playerJoinedEvents: PlayerJoinedGamePayload[] = [];
   private readonly playerLeftEvents: PlayerLeftGamePayload[] = [];
   private readonly pingIntervalId;
+  private mapState?: SetMapPayload;
 
   constructor(gameScene: GameScene) {
     this.gameScene = gameScene;
@@ -68,6 +69,9 @@ export class Session {
     this.gameInitialized = true;
     this.playerJoinedEvents.forEach((event) => this.gameScene.addNewPlayer(event));
     this.playerLeftEvents.forEach((event) => this.gameScene.removePlayer(event));
+    if (this.mapState !== undefined) {
+      this.gameScene.setMap(this.mapState);
+    }
   }
 
   private sendEvent(event: MultiplayerEvent, payload: any) {
@@ -140,8 +144,7 @@ export class Session {
         break;
       }
       case MultiplayerEvent.SET_MAP: {
-        const state = payload as SetMapPayload;
-        this.gameScene.setMap(state);
+        this.mapState = payload as SetMapPayload;
         break;
       }
       case MultiplayerEvent.PING: {

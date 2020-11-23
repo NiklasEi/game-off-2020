@@ -24,6 +24,21 @@ export interface GameStatePayload {
 
 export interface SetMapPayload {
   startPoint: Position;
+  planets: Planet[];
+}
+
+interface Planet {
+  position: Position;
+  radius: number;
+  planetType: PlanetType;
+}
+
+export enum PlanetType {
+  EARTH = 'EARTH',
+  RED = 'RED',
+  YELLOW = 'YELLOW',
+  GAS = 'GAS',
+  WHITE = 'WHITE'
 }
 
 export interface RoomLeaderPayload {

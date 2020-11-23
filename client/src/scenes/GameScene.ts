@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { Session } from '../networking/Session';
 import {
   GameStatePayload,
+  PlanetType,
   PlayerJoinedGamePayload,
   PlayerLeftGamePayload,
   PlayerStateInboundPayload,
@@ -44,21 +45,9 @@ export class GameScene extends Phaser.Scene {
     this.scene.run('gameHud');
     // prepare map
     const map = this.make.tilemap({ key: 'space' });
-    const tileset = map.addTilesetImage('space', 'spacetiles', tileSize, tileSize, 1, 2);
+    const tileset = map.addTilesetImage('space', 'space-tiles', tileSize, tileSize, 1, 2);
     map.createStaticLayer('background', tileset);
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
-
-    // The player and its settings
-    const spaceShipShape = this.cache.json.get('spaceship-shape');
-    console.log(spaceShipShape.spaceship);
-    this.spaceShip = this.matter.add.image(100, 450, 'spaceship', undefined, {
-      vertices: spaceShipShape.spaceship,
-      friction: 0,
-      frictionStatic: 0,
-      frictionAir: 0
-    });
-    this.matter.world.setBounds(0, 0, 3200, 3200);
-    this.cameras.main.startFollow(this.spaceShip, true);
 
     const particles = this.add.particles('fire');
     this.spaceShipEmitter = particles.createEmitter({
@@ -71,6 +60,17 @@ export class GameScene extends Phaser.Scene {
       blendMode: 'ADD'
     });
 
+    // The player and its settings
+    const spaceShipShape = this.cache.json.get('spaceship-shape');
+    console.log(spaceShipShape.spaceship);
+    this.spaceShip = this.matter.add.image(100, 450, 'spaceship', undefined, {
+      vertices: spaceShipShape.spaceship,
+      friction: 0,
+      frictionStatic: 0,
+      frictionAir: 0
+    });
+    this.matter.world.setBounds(0, 0, 3200, 3200);
+    this.cameras.main.startFollow(this.spaceShip, true);
     this.spaceShipEmitter.startFollow(this.spaceShip);
 
     //  Input Events
@@ -198,6 +198,35 @@ export class GameScene extends Phaser.Scene {
   }
 
   public setMap(payload: SetMapPayload) {
-    console.log(`set map ${payload}`);
+    payload.planets.forEach((planetData) => {
+      const key = this.getPlanetImageKeyFromType(planetData.planetType);
+      const planet = this.matter.add.image(planetData.position.x, planetData.position.y, key);
+      planet.setCircle(planetData.radius);
+      planet.setStatic(true);
+    });
+  }
+
+  private getPlanetImageKeyFromType(planetType: PlanetType) {
+    switch (planetType) {
+      case PlanetType.EARTH: {
+        return 'planet-earth';
+      }
+      case PlanetType.GAS: {
+        return 'planet-gas';
+      }
+      case PlanetType.RED: {
+        return 'planet-red';
+      }
+      case PlanetType.WHITE: {
+        return 'planet-white';
+      }
+      case PlanetType.YELLOW: {
+        return 'planet-yellow';
+      }
+      default: {
+        console.warn(`Unknown planet type ${planetType}, falling back to earth...`);
+        return 'planet-earth';
+      }
+    }
   }
 }

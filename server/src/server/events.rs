@@ -55,9 +55,15 @@ impl MultiplayerEvent for PlayerLeftGameEvent {
 
 impl MultiplayerEvent for SetMapGameEvent<'_> {
     fn to_message(&self) -> String {
+        let planets: String = self.map.planets.iter().map(|planet| -> String {
+            return format!(
+                    "{{\"position\":{{\"x\": {},\"y\": {}}},\"radius\":{},\"planetType\":\"{:?}\"}}",
+                    planet.position.x, planet.position.y, planet.radius, planet.planet_type
+                )
+        }).collect::<Vec<String>>().join(",");
         format!(
-            "Event SetMap:{{\"startPoint\":{{\"x\": {},\"y\": {}}}}}",
-            self.map.start_point.x, self.map.start_point.y
+            "Event SetMap:{{\"startPoint\":{{\"x\": {},\"y\": {}}},\"planets\":[{}]}}",
+            self.map.start_point.x, self.map.start_point.y, planets
         )
     }
 }

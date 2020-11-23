@@ -1,3 +1,7 @@
+use rand::distributions::Standard;
+use rand::prelude::Distribution;
+use rand::Rng;
+
 #[derive(Debug)]
 pub struct GameMap {
     pub size: Coordinates,
@@ -25,4 +29,16 @@ pub enum PlanetType {
     YELLOW,
     GAS,
     WHITE,
+}
+
+impl Distribution<PlanetType> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PlanetType {
+        match rng.gen_range(0, 5) {
+            0 => PlanetType::EARTH,
+            1 => PlanetType::RED,
+            2 => PlanetType::YELLOW,
+            3 => PlanetType::GAS,
+            _ => PlanetType::WHITE,
+        }
+    }
 }
