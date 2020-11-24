@@ -45,7 +45,6 @@ export class Session {
 
     this.socket = new WebSocket(wsUri);
     this.setEvents();
-    this.pingIntervalId = setInterval(this.getCurrentPing.bind(this), 2000);
   }
 
   private getCurrentPing() {
@@ -89,6 +88,7 @@ export class Session {
     }
     if (this.gameMode === GameMode.MULTI_PLAYER) {
       setInterval(() => this.gameScene.sendGameEvents(), 100);
+      this.pingIntervalId = setInterval(this.getCurrentPing.bind(this), 2000);
     }
   }
 
