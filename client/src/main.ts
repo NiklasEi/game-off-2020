@@ -4,14 +4,6 @@ import Preloader from './scenes/Preloader';
 import * as Phaser from 'phaser';
 import GameHud from './scenes/GameHud';
 
-// import SettingsConfig = Phaser.Types.Scenes.SettingsConfig;
-
-// const sceneConfig: SettingsConfig = {
-//   active: false,
-//   visible: false,
-//   key: 'Game'
-// };
-
 const gameConfig: Phaser.Types.Core.GameConfig = {
   title: 'Phaser',
   type: Phaser.WEBGL,

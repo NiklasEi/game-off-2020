@@ -1,4 +1,4 @@
-import {GameScene} from '../scenes/GameScene';
+import { GameScene } from '../scenes/GameScene';
 import {
   GameStatePayload,
   MultiplayerEvent,
@@ -9,28 +9,39 @@ import {
   RoomLeaderPayload,
   SetMapPayload,
   SignedGameStatePayload
-} from './MultiplayerEvent';
-import {sceneEvents} from '../events/EventCenter';
+} from '../networking/MultiplayerEvent';
+import { sceneEvents } from '../events/EventCenter';
+import { GameMode } from './GameMode';
 
-declare const SERVER_BASE_HOST: string;
+declare const SERVER_HOST: string;
 
 export class Session {
-  private socket: WebSocket;
+  private socket?: WebSocket;
   private readonly gameScene: GameScene;
+  private readonly gameMode: GameMode;
   public isRoomLeader: boolean = false;
   private secret?: string;
   private gameInitialized = false;
   private readonly playerJoinedEvents: PlayerJoinedGamePayload[] = [];
   private readonly playerLeftEvents: PlayerLeftGamePayload[] = [];
-  private readonly pingIntervalId;
+  private pingIntervalId?: number;
   private mapState?: SetMapPayload;
 
-  constructor(gameScene: GameScene) {
+  constructor(gameScene: GameScene, gameMode: GameMode) {
     this.gameScene = gameScene;
+    this.gameMode = gameMode;
+    if (gameMode === GameMode.MULTI_PLAYER) {
+      this.establishMultiPlayerSession();
+    } else {
+      console.log('Single player is not yet fully supported');
+    }
+  }
+
+  private establishMultiPlayerSession() {
     const { location } = window;
     const proto = location.protocol.startsWith('https') ? 'wss' : 'ws';
-    /* global SERVER_BASE_HOST */
-    const wsUri = `${proto}://${SERVER_BASE_HOST}/ws/`;
+    /* global SERVER_HOST */
+    const wsUri = `${proto}://${SERVER_HOST}/ws/`;
 
     this.socket = new WebSocket(wsUri);
     this.setEvents();
@@ -42,6 +53,10 @@ export class Session {
   }
 
   private setEvents() {
+    if (this.socket === undefined) {
+      console.error('Tried to set events on an undefined websocket');
+      return;
+    }
     this.socket.onopen = () => {
       // eslint-disable-next-line no-console
       console.log('Connected to Server');
@@ -57,12 +72,12 @@ export class Session {
     this.socket.onclose = () => {
       // eslint-disable-next-line no-console
       console.log('Disconnected from Server');
+      if (this.pingIntervalId !== undefined) {
+        clearInterval(this.pingIntervalId);
+        this.pingIntervalId = undefined;
+      }
       this.gameScene.disconnectSession();
     };
-  }
-
-  public send(text: string) {
-    this.socket.send(text);
   }
 
   public initializedGame() {
@@ -72,9 +87,16 @@ export class Session {
     if (this.mapState !== undefined) {
       this.gameScene.setMap(this.mapState);
     }
+    if (this.gameMode === GameMode.MULTI_PLAYER) {
+      setInterval(() => this.gameScene.sendGameEvents(), 100);
+    }
   }
 
   private sendEvent(event: MultiplayerEvent, payload: any) {
+    if (this.socket === undefined) {
+      console.warn('Tried to send text over an undefined websocket');
+      return;
+    }
     this.socket.send(`Event ${event}:${JSON.stringify(payload, undefined, 0)}`);
   }
 
@@ -145,6 +167,9 @@ export class Session {
       }
       case MultiplayerEvent.SET_MAP: {
         this.mapState = payload as SetMapPayload;
+        if (this.gameInitialized) {
+          this.gameScene.setMap(this.mapState);
+        }
         break;
       }
       case MultiplayerEvent.PING: {

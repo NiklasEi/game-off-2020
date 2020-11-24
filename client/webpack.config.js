@@ -53,9 +53,9 @@ module.exports = {
             ],
         }),
         new webpack.DefinePlugin({
-            'typeof CANVAS_RENDERER': JSON.stringify(true),
+            'typeof CANVAS_RENDERER': JSON.stringify(false),
             'typeof WEBGL_RENDERER': JSON.stringify(true),
-            SERVER_BASE_HOST: JSON.stringify(process.env.SERVER_BASE_HOST ?? 'localhost:8080')
+            SERVER_HOST: JSON.stringify(process.env.SERVER_HOST ?? 'localhost:8080')
         }),
     ],
 

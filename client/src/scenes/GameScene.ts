@@ -1,5 +1,5 @@
 import * as Phaser from 'phaser';
-import { Session } from '../networking/Session';
+import { Session } from '../session/Session';
 import {
   GameStatePayload,
   PlanetType,
@@ -9,6 +9,7 @@ import {
   SetMapPayload
 } from '../networking/MultiplayerEvent';
 import { tileSize } from '../utils/constants';
+import { GameMode } from '../session/GameMode';
 import Vector2 = Phaser.Math.Vector2;
 
 interface Control {
@@ -27,10 +28,10 @@ export class GameScene extends Phaser.Scene {
   private players: any[] = [];
   private session?: Session;
   private keys!: Control;
+  private gameMode: GameMode = GameMode.SINGLE_PLAYER;
 
   constructor() {
     super('game');
-    this.session = new Session(this);
   }
 
   public preload() {
@@ -41,7 +42,13 @@ export class GameScene extends Phaser.Scene {
     this.session = undefined;
   }
 
-  public create() {
+  public init(data: any) {
+    this.gameMode = data.mode;
+  }
+
+  public async create() {
+    console.log(`establishing a ${this.gameMode} session`);
+    this.session = new Session(this, this.gameMode);
     this.scene.run('gameHud');
     // prepare map
     const map = this.make.tilemap({ key: 'space' });
@@ -76,8 +83,7 @@ export class GameScene extends Phaser.Scene {
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
 
-    this.session?.initializedGame();
-    setInterval(() => this.sendGameEvents(), 100);
+    this.session.initializedGame();
   }
 
   public update() {
@@ -140,7 +146,7 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  private sendGameEvents() {
+  public sendGameEvents() {
     if (this.session !== undefined) {
       this.session.sendPlayerStateEvent({
         position: {

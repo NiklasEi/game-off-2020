@@ -1,7 +1,9 @@
 import * as Phaser from 'phaser';
+import { GameMode } from '../session/GameMode';
 
 export default class MainMenu extends Phaser.Scene {
-  private playButton!: Phaser.GameObjects.Image;
+  private singlePlayButton!: Phaser.GameObjects.Image;
+  private multiPlayButton!: Phaser.GameObjects.Image;
 
   constructor() {
     super('mainMenu');
@@ -9,13 +11,26 @@ export default class MainMenu extends Phaser.Scene {
 
   create() {
     this.addControls((this.game.renderer.height * 2) / 3 + 64);
-    this.playButton = this.add.image(this.game.renderer.width / 2, (this.game.renderer.height * 2) / 3, 'start-button');
-    this.playButton.setInteractive();
-    this.playButton.on('pointerdown', () => {
-      this.playButton.setTint(0x808080);
+    this.singlePlayButton = this.add.image(this.game.renderer.width / 2, this.game.renderer.height / 3, 'start-button');
+    this.singlePlayButton.setInteractive();
+    this.singlePlayButton.on('pointerdown', () => {
+      this.singlePlayButton.setTint(0x808080);
     });
-    this.playButton.on('pointerup', () => {
-      this.scene.start('game');
+    this.singlePlayButton.on('pointerup', () => {
+      this.scene.start('game', { mode: GameMode.SINGLE_PLAYER });
+    });
+
+    this.multiPlayButton = this.add.image(
+      this.game.renderer.width / 2,
+      (this.game.renderer.height * 2) / 3,
+      'start-button'
+    );
+    this.multiPlayButton.setInteractive();
+    this.multiPlayButton.on('pointerdown', () => {
+      this.multiPlayButton.setTint(0x808080);
+    });
+    this.multiPlayButton.on('pointerup', () => {
+      this.scene.start('game', { mode: GameMode.MULTI_PLAYER });
     });
   }
 
