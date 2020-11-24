@@ -1,28 +1,31 @@
 use rand::distributions::Standard;
 use rand::prelude::Distribution;
 use rand::Rng;
+use serde::Serialize;
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct GameMap {
     pub size: Coordinates,
     pub start_point: Coordinates,
     pub planets: Vec<Planet>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct Planet {
     pub position: Coordinates,
     pub radius: usize,
     pub planet_type: PlanetType,
 }
 
-#[derive(Default, Debug)]
+#[derive(Default, Debug, Serialize)]
 pub struct Coordinates {
     pub x: usize,
     pub y: usize,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
 pub enum PlanetType {
     EARTH,
     RED,

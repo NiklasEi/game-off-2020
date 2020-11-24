@@ -14,7 +14,7 @@ export default class GameHud extends Phaser.Scene {
   }
 
   create() {
-    this.ping = this.add.text(725, 10, '');
+    this.ping = this.add.text(1125, 10, '');
 
     sceneEvents.on('update-ping', this.updatePing, this);
 

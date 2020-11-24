@@ -25,7 +25,7 @@ export class GameScene extends Phaser.Scene {
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly gameOver: boolean = false;
   private angularVelocity: number = 0;
-  private players: any[] = [];
+  private players: Phaser.Physics.Matter.Image[] = [];
   private session?: Session;
   private keys!: Control;
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
@@ -188,7 +188,6 @@ export class GameScene extends Phaser.Scene {
   }
 
   updatePlayer(payload: PlayerStateInboundPayload) {
-    console.log(`update ${payload.playerId}`);
     const player = this.players.find((player) => player.name === payload.playerId);
     if (player === undefined) return;
     player.x = payload.position.x;

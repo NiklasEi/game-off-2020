@@ -122,9 +122,9 @@ export class Session {
       return;
     }
     const event = matches[1];
-    if (event !== MultiplayerEvent.PING) {
-      console.log(message);
-    }
+    // if (event !== MultiplayerEvent.PING) {
+    //   console.log(message);
+    // }
     const payload = JSON.parse(message.replace(/^[a-zA-Z]+:/, ''));
     switch (event) {
       case MultiplayerEvent.GAME_STATE: {

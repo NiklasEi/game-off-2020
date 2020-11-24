@@ -9,6 +9,7 @@ use actix_broker::BrokerSubscribe;
 mod events;
 mod game_objects;
 mod map;
+mod planet;
 
 use std::collections::HashMap;
 
