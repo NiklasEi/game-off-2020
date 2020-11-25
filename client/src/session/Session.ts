@@ -1,6 +1,7 @@
 import { GameScene } from '../scenes/GameScene';
 import {
   GameStatePayload,
+  JoinGameAnswerPayload,
   MultiplayerEvent,
   PlayerJoinedGamePayload,
   PlayerLeftGamePayload,
@@ -11,14 +12,12 @@ import {
   SignedGameStatePayload
 } from '../networking/MultiplayerEvent';
 import { sceneEvents } from '../events/EventCenter';
-import { GameMode } from './GameMode';
 
 declare const SERVER_HOST: string;
 
 export class Session {
   private socket?: WebSocket;
-  private readonly gameScene: GameScene;
-  private readonly gameMode: GameMode;
+  private gameScene?: GameScene;
   public isRoomLeader: boolean = false;
   private secret?: string;
   private gameInitialized = false;
@@ -26,15 +25,15 @@ export class Session {
   private readonly playerLeftEvents: PlayerLeftGamePayload[] = [];
   private pingIntervalId?: number;
   private mapState?: SetMapPayload;
+  private gameCode?: string;
 
-  constructor(gameScene: GameScene, gameMode: GameMode) {
-    this.gameScene = gameScene;
-    this.gameMode = gameMode;
-    if (gameMode === GameMode.MULTI_PLAYER) {
-      this.establishMultiPlayerSession();
-    } else {
-      console.log('Single player is not yet fully supported');
-    }
+  constructor() {
+    this.establishMultiPlayerSession();
+  }
+
+  public connect(gameCode: string) {
+    this.gameCode = gameCode;
+    this.sendEvent(MultiplayerEvent.JOIN_GAME, { code: this.gameCode });
   }
 
   private establishMultiPlayerSession() {
@@ -64,7 +63,7 @@ export class Session {
     this.socket.onmessage = (ev) => {
       const text = ev.data as string;
       if (text.startsWith('Event ')) {
-        this.handleGameEvent(text.replace(/^Event /, ''));
+        this.handleEvent(text.replace(/^Event /, ''));
       }
     };
 
@@ -75,21 +74,20 @@ export class Session {
         clearInterval(this.pingIntervalId);
         this.pingIntervalId = undefined;
       }
-      this.gameScene.disconnectSession();
+      this.gameScene?.disconnectSession();
     };
   }
 
-  public initializedGame() {
+  public initializeGame(gameScene: GameScene) {
+    this.gameScene = gameScene;
     this.gameInitialized = true;
-    this.playerJoinedEvents.forEach((event) => this.gameScene.addNewPlayer(event));
-    this.playerLeftEvents.forEach((event) => this.gameScene.removePlayer(event));
+    this.playerJoinedEvents.forEach((event) => gameScene.addNewPlayer(event));
+    this.playerLeftEvents.forEach((event) => gameScene.removePlayer(event));
     if (this.mapState !== undefined) {
-      this.gameScene.setMap(this.mapState);
+      gameScene.setMap(this.mapState);
     }
-    if (this.gameMode === GameMode.MULTI_PLAYER) {
-      setInterval(() => this.gameScene.sendGameEvents(), 100);
-      this.pingIntervalId = setInterval(this.getCurrentPing.bind(this), 2000);
-    }
+    setInterval(() => gameScene.sendGameEvents(), 100);
+    this.pingIntervalId = setInterval(this.getCurrentPing.bind(this), 2000);
   }
 
   private sendEvent(event: MultiplayerEvent, payload: any) {
@@ -114,7 +112,7 @@ export class Session {
     this.sendEvent(MultiplayerEvent.PLAYER_STATE, payload);
   }
 
-  private handleGameEvent(message: string) {
+  private handleEvent(message: string) {
     const matches = message.match(/^([a-zA-Z]+):/);
     if (matches === null || matches.length < 1) {
       // eslint-disable-next-line no-console
@@ -133,7 +131,7 @@ export class Session {
           // eslint-disable-next-line no-console
           console.warn('got game state as room leader O.o');
         }
-        this.gameScene.updateGameState(state);
+        this.gameScene?.updateGameState(state);
         break;
       }
       case MultiplayerEvent.ROOM_LEADER: {
@@ -145,7 +143,7 @@ export class Session {
       case MultiplayerEvent.PLAYER_JOINED_GAME: {
         const state = payload as PlayerJoinedGamePayload;
         if (this.gameInitialized) {
-          this.gameScene.addNewPlayer(state);
+          this.gameScene?.addNewPlayer(state);
         } else {
           this.playerJoinedEvents.push(state);
         }
@@ -154,7 +152,7 @@ export class Session {
       case MultiplayerEvent.PLAYER_LEFT_GAME: {
         const state = payload as PlayerLeftGamePayload;
         if (this.gameInitialized) {
-          this.gameScene.removePlayer(state);
+          this.gameScene?.removePlayer(state);
         } else {
           this.playerLeftEvents.push(state);
         }
@@ -162,14 +160,19 @@ export class Session {
       }
       case MultiplayerEvent.PLAYER_STATE: {
         const state = payload as PlayerStateInboundPayload;
-        this.gameScene.updatePlayer(state);
+        this.gameScene?.updatePlayer(state);
         break;
       }
       case MultiplayerEvent.SET_MAP: {
         this.mapState = payload as SetMapPayload;
         if (this.gameInitialized) {
-          this.gameScene.setMap(this.mapState);
+          this.gameScene?.setMap(this.mapState);
         }
+        break;
+      }
+      case MultiplayerEvent.JOIN_GAME: {
+        const answer = payload as JoinGameAnswerPayload;
+        sceneEvents.emit('join-game', answer);
         break;
       }
       case MultiplayerEvent.PING: {

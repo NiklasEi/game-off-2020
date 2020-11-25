@@ -1,11 +1,13 @@
+use log::info;
+
 use crate::server::game_objects::{Coordinates, GameMap, Planet};
 use rand::{random, thread_rng, Rng};
 
 impl GameMap {
     const PLANET_RADIUS: usize = 125;
-    const DISTANCE_BETWEEN_PLANETS: usize = 500;
-    const NUMBER_OF_PLANETS: usize = 10;
-    const MAP_SIZE: usize = 3200;
+    const DISTANCE_BETWEEN_PLANETS: usize = 2000;
+    const NUMBER_OF_PLANETS: usize = 50;
+    const MAP_SIZE: usize = 32000;
     pub fn create_random() -> Self {
         GameMap {
             size: Coordinates {
@@ -29,7 +31,12 @@ impl GameMap {
                 0 + Self::DISTANCE_BETWEEN_PLANETS,
                 Self::MAP_SIZE - Self::DISTANCE_BETWEEN_PLANETS,
             );
+            let mut tries = 0;
             while !Self::does_fit_with_planets(&planets, x, y) {
+                if tries > 20 {
+                    info!("tried to place a planet more than 20 times");
+                    break;
+                }
                 y = rng.gen_range(
                     0 + Self::DISTANCE_BETWEEN_PLANETS,
                     Self::MAP_SIZE - Self::DISTANCE_BETWEEN_PLANETS,
@@ -38,12 +45,15 @@ impl GameMap {
                     0 + Self::DISTANCE_BETWEEN_PLANETS,
                     Self::MAP_SIZE - Self::DISTANCE_BETWEEN_PLANETS,
                 );
+                tries += 1;
             }
-            planets.push(Planet {
-                planet_type: random(),
-                position: Coordinates { x, y },
-                radius: Self::PLANET_RADIUS,
-            })
+            if Self::does_fit_with_planets(&planets, x, y) {
+                planets.push(Planet {
+                    planet_type: random(),
+                    position: Coordinates { x, y },
+                    radius: Self::PLANET_RADIUS,
+                })
+            }
         }
 
         planets

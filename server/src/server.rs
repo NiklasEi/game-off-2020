@@ -141,7 +141,7 @@ impl Handler<JoinGame> for WsGameServer {
         let game = self.games.get(&game_name).expect("Failed to get room");
         self.send_message_to_player(id, &SetMapGameEvent { map: &game.map }.to_message());
         if game.leader.is_none() {
-            info!("Making {} leader of game {:?}", id, game);
+            info!("Making {} leader of game {}", id, &game_name);
             self.make_player_leader(id, String::from(&game_name));
         }
         self.send_message_to_game(

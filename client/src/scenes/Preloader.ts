@@ -1,13 +1,17 @@
 import * as Phaser from 'phaser';
+import { Session } from '../session/Session';
 
 export default class Preloader extends Phaser.Scene {
+  private readonly session: Session;
+
   constructor() {
     super('preloader');
+    this.session = new Session();
   }
 
   preload() {
     // map
-    this.load.image('space-tiles', 'assets/map/space-tileset-extruded.png');
+    this.load.image('space-tiles', 'assets/map/space_tileset.png');
     this.load.tilemapTiledJSON('space', 'assets/map/space.json');
 
     // planets
@@ -28,6 +32,6 @@ export default class Preloader extends Phaser.Scene {
   }
 
   create() {
-    this.scene.start('mainMenu');
+    this.scene.start('mainMenu', { session: this.session });
   }
 }

@@ -5,7 +5,8 @@ export enum MultiplayerEvent {
   PLAYER_JOINED_GAME = 'PlayerJoinedGame',
   PLAYER_LEFT_GAME = 'PlayerLeftGame',
   SET_MAP = 'SetMap',
-  PING = 'Ping'
+  PING = 'Ping',
+  JOIN_GAME = 'JoinGame'
 }
 
 export interface PlayerStateInboundPayload extends PlayerStateOutboundPayload {
@@ -20,6 +21,11 @@ export interface SignedGameStatePayload extends GameStatePayload {
 
 export interface GameStatePayload {
   _stuff: any;
+}
+
+export interface JoinGameAnswerPayload {
+  ok: boolean;
+  reason?: string;
 }
 
 export interface SetMapPayload {

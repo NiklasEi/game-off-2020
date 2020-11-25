@@ -14,7 +14,7 @@ use std::time::{Duration, Instant};
 #[derive(Default)]
 pub struct PlayerSession {
     id: usize,
-    game_name: String,
+    game_name: Option<String>,
     /// Client must send ping at least once per 10 seconds (CLIENT_TIMEOUT),
     /// otherwise we drop connection.
     hb: HeartBeat,
@@ -40,13 +40,17 @@ impl PlayerSession {
     pub fn join_game(&mut self, game_name: &str, ctx: &mut ws::WebsocketContext<Self>) {
         let game_name = game_name.to_owned();
 
-        let leave_msg = LeaveGame {
-            game_name: self.game_name.clone(),
-            player_id: self.id,
-        };
-        self.issue_system_sync(leave_msg, ctx);
+        match &self.game_name {
+            Some(game_name) => {
+                let leave_msg = LeaveGame {
+                    game_name: game_name.clone(),
+                    player_id: self.id,
+                };
+                self.issue_system_sync(leave_msg, ctx);
+            }
+            _ => (),
+        }
 
-        // Then send a join message for the new room
         let join_msg = JoinGame {
             game_name: game_name.clone(),
             player: ctx.address().recipient(),
@@ -55,38 +59,48 @@ impl PlayerSession {
         WsGameServer::from_registry()
             .send(join_msg)
             .into_actor(self)
-            .then(|id, act, _ctx| {
+            .then(|id, act, ctx| {
                 if let Ok(id) = id {
                     act.id = id;
-                    act.game_name = game_name;
+                    act.game_name = Some(game_name);
                 }
-
+                ctx.text("Event JoinGame:{\"ok\": true}");
                 fut::ready(())
             })
             .wait(ctx);
     }
 
     pub fn send_msg(&self, msg: &str) {
-        let msg = GameMessage {
-            game_name: self.game_name.clone(),
-            message: String::from(msg),
-            sender_id: self.id,
-        };
+        match &self.game_name {
+            Some(game_name) => {
+                let msg = GameMessage {
+                    game_name: game_name.clone(),
+                    message: String::from(msg),
+                    sender_id: self.id,
+                };
 
-        // issue_async comes from having the `BrokerIssue` trait in scope.
-        self.issue_system_async(msg);
+                // issue_async comes from having the `BrokerIssue` trait in scope.
+                self.issue_system_async(msg);
+            }
+            _ => (),
+        }
     }
 
     pub fn send_game_state(&self, payload: serde_json::Value, secret: String) {
-        let msg = GameState {
-            sender_id: self.id,
-            game_name: self.game_name.to_owned(),
-            payload,
-            secret,
-        };
+        match &self.game_name {
+            Some(game_name) => {
+                let msg = GameState {
+                    sender_id: self.id,
+                    game_name: game_name.to_owned(),
+                    payload,
+                    secret,
+                };
 
-        // issue_async comes from having the `BrokerIssue` trait in scope.
-        self.issue_system_async(msg);
+                // issue_async comes from having the `BrokerIssue` trait in scope.
+                self.issue_system_async(msg);
+            }
+            _ => (),
+        }
     }
 
     fn hb(&self, ctx: &mut <Self as Actor>::Context) {
@@ -94,13 +108,20 @@ impl PlayerSession {
             // check client heartbeats
             if Instant::now().duration_since(act.hb.last_client_hb) > act.hb.timeout {
                 println!("Websocket Client heartbeat timed out. Leaving game and disconnecting!");
-                act.issue_system_sync(
-                    LeaveGame {
-                        game_name: act.game_name.clone(),
-                        player_id: act.id.clone(),
-                    },
-                    ctx,
-                );
+
+                match &act.game_name {
+                    Some(game_name) => {
+                        act.issue_system_sync(
+                            LeaveGame {
+                                game_name: game_name.clone(),
+                                player_id: act.id.clone(),
+                            },
+                            ctx,
+                        );
+                    }
+                    _ => (),
+                }
+
                 ctx.stop();
                 return;
             }
@@ -115,19 +136,23 @@ impl Actor for PlayerSession {
 
     fn started(&mut self, ctx: &mut Self::Context) {
         self.hb(ctx);
-        self.join_game("MainGame", ctx);
     }
 
     fn stopped(&mut self, ctx: &mut Self::Context) {
-        self.issue_system_sync(
-            LeaveGame {
-                game_name: self.game_name.clone(),
-                player_id: self.id.clone(),
-            },
-            ctx,
-        );
+        match &self.game_name {
+            Some(game_name) => {
+                self.issue_system_sync(
+                    LeaveGame {
+                        game_name: game_name.clone(),
+                        player_id: self.id.clone(),
+                    },
+                    ctx,
+                );
+            }
+            _ => (),
+        }
         info!(
-            "WsGameSession closed for {} in game {}",
+            "WsGameSession closed for {} in game {:?}",
             self.id, self.game_name
         );
     }
@@ -185,6 +210,32 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerSession {
                                         serde_json::Value::String(self.id.to_string()),
                                     );
                                 self.send_msg(&format!("Event PlayerState:{}", &json.to_string()));
+                            }
+                        }
+                        Some("Event JoinGame") => {
+                            if let Some(payload) = command.next() {
+                                let json: serde_json::Value =
+                                    serde_json::from_str(payload).expect("malformed_json");
+                                let json_map =
+                                    json.as_object().expect("malformed_json: not an object");
+                                let code = json_map.get("code").expect("No game code").as_str();
+                                match code {
+                                    Some(code) => {
+                                        let chars: Vec<char> = code.chars().collect();
+                                        if chars.len() != 5 {
+                                            ctx.text("Event JoinGame:{\"ok\": false,\"reason\":\"Code should be 5 characters\"}");
+                                            return;
+                                        }
+                                        if chars.iter().any(|single_char| -> bool {
+                                            !single_char.is_alphanumeric()
+                                        }) {
+                                            ctx.text("Event JoinGame:{\"ok\": false,\"reason\":\"Code should be alpha numeric\"}");
+                                            return;
+                                        }
+                                        self.join_game(code, ctx);
+                                    }
+                                    _ => (),
+                                };
                             }
                         }
                         Some("Event Ping") => {

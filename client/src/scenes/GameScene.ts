@@ -29,6 +29,7 @@ export class GameScene extends Phaser.Scene {
   private session?: Session;
   private keys!: Control;
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
+  private code?: string;
 
   constructor() {
     super('game');
@@ -44,15 +45,15 @@ export class GameScene extends Phaser.Scene {
 
   public init(data: any) {
     this.gameMode = data.mode;
+    this.code = data.code;
+    this.session = data.session;
   }
 
   public async create() {
-    console.log(`establishing a ${this.gameMode} session`);
-    this.session = new Session(this, this.gameMode);
     this.scene.run('gameHud');
     // prepare map
     const map = this.make.tilemap({ key: 'space' });
-    const tileset = map.addTilesetImage('space', 'space-tiles', tileSize, tileSize, 1, 2);
+    const tileset = map.addTilesetImage('space', 'space-tiles', tileSize, tileSize, 0, 0);
     map.createStaticLayer('background', tileset);
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
@@ -76,14 +77,21 @@ export class GameScene extends Phaser.Scene {
       frictionStatic: 0,
       frictionAir: 0
     });
-    this.matter.world.setBounds(0, 0, 3200, 3200);
+    this.matter.world.setBounds(0, 0, 32000, 32000);
     this.cameras.main.startFollow(this.spaceShip, true);
     this.spaceShipEmitter.startFollow(this.spaceShip);
 
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
 
-    this.session.initializedGame();
+    if (this.gameMode === GameMode.SINGLE_PLAYER) {
+      console.log('Single player is not yet fully supported');
+    } else {
+      if (this.session === undefined) {
+        console.error('No session for multi player game!');
+      }
+      this.session?.initializeGame(this);
+    }
   }
 
   public update() {

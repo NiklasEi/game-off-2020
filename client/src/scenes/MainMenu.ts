@@ -1,12 +1,19 @@
 import * as Phaser from 'phaser';
 import { GameMode } from '../session/GameMode';
+import { Session } from '../session/Session';
+import { sceneEvents } from '../events/EventCenter';
 
 export default class MainMenu extends Phaser.Scene {
   private singlePlayButton!: Phaser.GameObjects.Image;
   private multiPlayButton!: Phaser.GameObjects.Image;
+  private session?: Session;
 
   constructor() {
     super('mainMenu');
+  }
+
+  init(data: any) {
+    this.session = data.session;
   }
 
   create() {
@@ -30,7 +37,28 @@ export default class MainMenu extends Phaser.Scene {
       this.multiPlayButton.setTint(0x808080);
     });
     this.multiPlayButton.on('pointerup', () => {
-      this.scene.start('game', { mode: GameMode.MULTI_PLAYER });
+      const codeInput = document.getElementById('gameCode');
+      if (codeInput !== null) {
+        const code = (codeInput as HTMLFormElement).value;
+        this.session?.connect(code);
+
+        sceneEvents.once('join-game', ({ ok, reason }: { ok: boolean; reason?: string }) => {
+          if (ok) {
+            this.scene.start('game', { mode: GameMode.MULTI_PLAYER, code, session: this.session });
+          } else {
+            this.multiPlayButton.clearTint();
+            const codeCaption = document.getElementById('codeCaption');
+            if (codeCaption !== null && reason !== undefined) {
+              codeCaption.innerText = reason;
+            }
+          }
+        });
+      } else {
+        const codeCaption = document.getElementById('codeCaption');
+        if (codeCaption !== null) {
+          codeCaption.innerText = 'Please supply a game code';
+        }
+      }
     });
   }
 

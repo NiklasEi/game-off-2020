@@ -1,5 +1,3 @@
-use log::info;
-
 use crate::server::game_objects::GameMap;
 use serde;
 use serde::Serialize;
@@ -49,11 +47,6 @@ impl MultiplayerEvent for RoomLeaderEvent {
 
 impl MultiplayerEvent for PlayerJoinedGameEvent {
     fn to_message(&self) -> String {
-        info!(
-            "got {} serialising to {}",
-            self.player_id,
-            serde_json::to_string(self).unwrap()
-        );
         format!(
             "Event PlayerJoinedGame:{}",
             serde_json::to_string(self).unwrap()
