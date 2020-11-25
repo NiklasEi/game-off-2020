@@ -1,2 +1,1 @@
-export const tileSize = 32;
-export const mapSize = 100;
+export const tileSize = 64;

@@ -3,7 +3,7 @@
  <editorsettings>
   <export target="../assets/map/space.json" format="json"/>
  </editorsettings>
- <tileset firstgid="1" name="space_tileset" tilewidth="64" tileheight="64" tilecount="64" columns="8">
+ <tileset firstgid="1" name="space" tilewidth="64" tileheight="64" tilecount="64" columns="8">
   <image source="../assets/map/space_tileset.png" width="512" height="512"/>
  </tileset>
  <layer id="1" name="background" width="500" height="500">
