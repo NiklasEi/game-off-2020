@@ -79,6 +79,7 @@ export class GameScene extends Phaser.Scene {
     });
     this.matter.world.setBounds(0, 0, 32000, 32000);
     this.cameras.main.startFollow(this.spaceShip, true);
+    this.cameras.main.zoom = 0.5;
     this.spaceShipEmitter.startFollow(this.spaceShip);
 
     //  Input Events

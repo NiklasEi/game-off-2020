@@ -26,6 +26,7 @@ export class Session {
   private pingIntervalId?: number;
   private mapState?: SetMapPayload;
   private gameCode?: string;
+  public connected: boolean = false;
 
   constructor() {
     this.establishMultiPlayerSession();
@@ -58,6 +59,7 @@ export class Session {
     this.socket.onopen = () => {
       // eslint-disable-next-line no-console
       console.log('Connected to Server');
+      this.connected = true;
     };
 
     this.socket.onmessage = (ev) => {
@@ -70,6 +72,7 @@ export class Session {
     this.socket.onclose = () => {
       // eslint-disable-next-line no-console
       console.log('Disconnected from Server');
+      this.connected = false;
       if (this.pingIntervalId !== undefined) {
         clearInterval(this.pingIntervalId);
         this.pingIntervalId = undefined;

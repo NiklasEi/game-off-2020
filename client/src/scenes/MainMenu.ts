@@ -32,34 +32,45 @@ export default class MainMenu extends Phaser.Scene {
       (this.game.renderer.height * 2) / 3,
       'start-button'
     );
-    this.multiPlayButton.setInteractive();
-    this.multiPlayButton.on('pointerdown', () => {
-      this.multiPlayButton.setTint(0x808080);
-    });
-    this.multiPlayButton.on('pointerup', () => {
-      const codeInput = document.getElementById('gameCode');
-      if (codeInput !== null) {
-        const code = (codeInput as HTMLFormElement).value;
-        this.session?.connect(code);
+    this.multiPlayButton.setTint(0x808080);
 
-        sceneEvents.once('join-game', ({ ok, reason }: { ok: boolean; reason?: string }) => {
-          if (ok) {
-            this.scene.start('game', { mode: GameMode.MULTI_PLAYER, code, session: this.session });
-          } else {
-            this.multiPlayButton.clearTint();
-            const codeCaption = document.getElementById('codeCaption');
-            if (codeCaption !== null && reason !== undefined) {
-              codeCaption.innerText = reason;
+    const enableMultiPlayer = () => {
+      this.multiPlayButton.clearTint();
+      this.multiPlayButton.setInteractive();
+      this.multiPlayButton.on('pointerdown', () => {
+        this.multiPlayButton.setTint(0x808080);
+      });
+      this.multiPlayButton.on('pointerup', () => {
+        const codeInput = document.getElementById('gameCode');
+        if (codeInput !== null) {
+          const code = (codeInput as HTMLFormElement).value;
+          this.session?.connect(code);
+
+          sceneEvents.once('join-game', ({ ok, reason }: { ok: boolean; reason?: string }) => {
+            if (ok) {
+              this.scene.start('game', { mode: GameMode.MULTI_PLAYER, code, session: this.session });
+            } else {
+              this.multiPlayButton.clearTint();
+              const codeCaption = document.getElementById('codeCaption');
+              if (codeCaption !== null && reason !== undefined) {
+                codeCaption.innerText = reason;
+              }
             }
+          });
+        } else {
+          const codeCaption = document.getElementById('codeCaption');
+          if (codeCaption !== null) {
+            codeCaption.innerText = 'Please supply a game code';
           }
-        });
-      } else {
-        const codeCaption = document.getElementById('codeCaption');
-        if (codeCaption !== null) {
-          codeCaption.innerText = 'Please supply a game code';
         }
-      }
-    });
+      });
+    };
+
+    if (this.session?.connected) {
+      enableMultiPlayer();
+    } else {
+      sceneEvents.once('server-connected', enableMultiPlayer);
+    }
   }
 
   private addControls(height: number) {
