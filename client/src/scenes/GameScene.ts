@@ -53,7 +53,7 @@ export class GameScene extends Phaser.Scene {
     this.scene.run('gameHud');
     // prepare map
     const map = this.make.tilemap({ key: 'space' });
-    const tileset = map.addTilesetImage('space', 'space-tiles', tileSize, tileSize, 0, 0);
+    const tileset = map.addTilesetImage('space', 'space-tiles', tileSize, tileSize, 1, 2);
     map.createStaticLayer('background', tileset);
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
