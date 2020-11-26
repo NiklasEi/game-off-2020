@@ -10,6 +10,7 @@ import {
 } from '../networking/MultiplayerEvent';
 import { tileSize } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
+import LaserGroup from '../laser/Laser';
 import Vector2 = Phaser.Math.Vector2;
 
 interface Control {
@@ -30,9 +31,22 @@ export class GameScene extends Phaser.Scene {
   private keys!: Control;
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private code?: string;
+  private laserGroup?: LaserGroup;
 
   constructor() {
-    super('game');
+    super({
+      key: 'game',
+      physics: {
+        arcade: {
+          debug: false,
+          gravity: { y: 0 }
+        },
+        matter: {
+          debug: true,
+          gravity: false
+        }
+      }
+    });
   }
 
   public preload() {
@@ -82,6 +96,7 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.zoom = 0.5;
     this.spaceShipEmitter.startFollow(this.spaceShip);
 
+    this.laserGroup = new LaserGroup(this);
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -153,6 +168,10 @@ export class GameScene extends Phaser.Scene {
         currentSpeed.y * (speedUpperThreshold / totalCurrentSpeed)
       );
     }
+
+    if (cursors.space?.isDown) {
+      this.shootLaser();
+    }
   }
 
   public sendGameEvents() {
@@ -205,6 +224,12 @@ export class GameScene extends Phaser.Scene {
     player.setVelocityY(payload.velocity.y);
     player.setAngularVelocity(payload.angularVelocity);
     player.setRotation(payload.rotation);
+  }
+
+  shootLaser() {
+    if (this.laserGroup) {
+      this.laserGroup.fireLaser(this.spaceShip.x, this.spaceShip.y - 20);
+    }
   }
 
   public updateGameState(payload: GameStatePayload) {
