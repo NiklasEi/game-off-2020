@@ -4,6 +4,8 @@ import { sceneEvents } from '../events/EventCenter';
 
 export default class GameHud extends Phaser.Scene {
   private ping?: Phaser.GameObjects.Text;
+  private readonly coolDownLeft?: number;
+  private readonly coolDownRight?: number;
 
   constructor() {
     super({ key: 'gameHud' });
@@ -20,6 +22,12 @@ export default class GameHud extends Phaser.Scene {
 
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       sceneEvents.off('update-ping', this.updatePing, this);
+      if (this.coolDownLeft) {
+        clearTimeout(this.coolDownLeft);
+      }
+      if (this.coolDownRight) {
+        clearTimeout(this.coolDownRight);
+      }
     });
   }
 }

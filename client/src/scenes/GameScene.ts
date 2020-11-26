@@ -24,8 +24,8 @@ export class GameScene extends Phaser.Scene {
   private spaceShip!: Phaser.Physics.Matter.Image;
   private spaceShipEmitterLeft!: Phaser.GameObjects.Particles.ParticleEmitter;
   private spaceShipEmitterRight!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private readonly leftEngine = new Vector2(-35, -25);
-  private readonly rightEngine = new Vector2(-35, 25);
+  private readonly leftEngine = new Vector2(-52, -28);
+  private readonly rightEngine = new Vector2(-52, 28);
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly gameOver: boolean = false;
   private angularVelocity: number = 0;
@@ -91,8 +91,7 @@ export class GameScene extends Phaser.Scene {
 
     // The player and its settings
     const spaceShipShape = this.cache.json.get('spaceship-shape');
-    console.log(spaceShipShape.spaceship);
-    this.spaceShip = this.matter.add.image(100, 450, 'spaceship', undefined, {
+    this.spaceShip = this.matter.add.image(100, 450, 'spaceship-yellow', undefined, {
       vertices: spaceShipShape.spaceship,
       friction: 0,
       frictionStatic: 0,

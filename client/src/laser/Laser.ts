@@ -1,5 +1,6 @@
 import * as Phaser from 'phaser';
 import Vector2 = Phaser.Math.Vector2;
+import { sceneEvents } from '../events/EventCenter';
 
 enum LaserToShoot {
   LEFT,
@@ -12,8 +13,8 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
   private readonly laserCoolDown = 10000;
   private leftLastFire = Date.now().valueOf();
   private rightLastFire = Date.now().valueOf();
-  private readonly leftLaser = new Vector2(50, -25);
-  private readonly rightLaser = new Vector2(50, 25);
+  private readonly leftLaser = new Vector2(60, -27);
+  private readonly rightLaser = new Vector2(60, 26);
 
   constructor(scene: Phaser.Scene) {
     // Call the super constructor, passing in a world and a scene
@@ -40,9 +41,11 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
     if (timestamp - this.leftLastFire > this.laserCoolDown) {
       this.leftLastFire = timestamp;
       laserToShoot = LaserToShoot.LEFT;
+      sceneEvents.emit('laser-fire-left', timestamp + this.laserCoolDown);
     } else if (timestamp - this.rightLastFire > this.laserCoolDown) {
       this.rightLastFire = timestamp;
       laserToShoot = LaserToShoot.RIGHT;
+      sceneEvents.emit('laser-fire-right', timestamp + this.laserCoolDown);
     }
     if (laserToShoot === LaserToShoot.NONE) {
       return;
