@@ -48,7 +48,7 @@ export class Session {
   }
 
   private getCurrentPing() {
-    this.sendEvent(MultiplayerEvent.PING, { timestamp: new Date().valueOf() });
+    this.sendEvent(MultiplayerEvent.PING, { timestamp: Date.now().valueOf() });
   }
 
   private setEvents() {
@@ -180,7 +180,7 @@ export class Session {
       }
       case MultiplayerEvent.PING: {
         const state = payload as { timestamp: number };
-        sceneEvents.emit('update-ping', new Date().valueOf() - state.timestamp);
+        sceneEvents.emit('update-ping', Date.now().valueOf() - state.timestamp);
         break;
       }
 

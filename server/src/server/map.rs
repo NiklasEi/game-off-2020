@@ -7,7 +7,7 @@ impl GameMap {
     const PLANET_RADIUS: usize = 125;
     const DISTANCE_BETWEEN_PLANETS: usize = 2000;
     const NUMBER_OF_PLANETS: usize = 50;
-    const MAP_SIZE: usize = 32000;
+    const MAP_SIZE: usize = 51_200;
     pub fn create_random() -> Self {
         GameMap {
             size: Coordinates {
@@ -63,12 +63,12 @@ impl GameMap {
         planets
             .iter()
             .find(|planet| -> bool {
-                let vector: (i32, i32) = (
-                    x as i32 - planet.position.x as i32,
-                    y as i32 - planet.position.y as i32,
+                let vector: (i64, i64) = (
+                    x as i64 - planet.position.x as i64,
+                    y as i64 - planet.position.y as i64,
                 );
 
-                vector.0.pow(2) + vector.1.pow(2) < Self::DISTANCE_BETWEEN_PLANETS.pow(2) as i32
+                vector.0.pow(2) + vector.1.pow(2) < Self::DISTANCE_BETWEEN_PLANETS.pow(2) as i64
             })
             .is_none()
     }

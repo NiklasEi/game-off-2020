@@ -12,6 +12,7 @@ import { tileSize } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
 import LaserGroup from '../laser/Laser';
 import Vector2 = Phaser.Math.Vector2;
+import { sceneEvents } from '../events/EventCenter';
 
 interface Control {
   W: any;
@@ -27,7 +28,6 @@ export class GameScene extends Phaser.Scene {
   private readonly leftEngine = new Vector2(-52, -28);
   private readonly rightEngine = new Vector2(-52, 28);
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
-  private readonly gameOver: boolean = false;
   private angularVelocity: number = 0;
   private players: Phaser.Physics.Matter.Image[] = [];
   private session?: Session;
@@ -79,7 +79,7 @@ export class GameScene extends Phaser.Scene {
     const particles = this.add.particles('fire');
     const emitterConfig = {
       speed: 10,
-      on: true,
+      on: false,
       lifespan: 400,
       alpha: 1000,
       maxParticles: 100,
@@ -91,13 +91,13 @@ export class GameScene extends Phaser.Scene {
 
     // The player and its settings
     const spaceShipShape = this.cache.json.get('spaceship-shape');
-    this.spaceShip = this.matter.add.image(100, 450, 'spaceship-yellow', undefined, {
+    this.spaceShip = this.matter.add.image(7 * tileSize, 7 * tileSize, 'spaceship-yellow', undefined, {
       vertices: spaceShipShape.spaceship,
       friction: 0,
       frictionStatic: 0,
       frictionAir: 0
     });
-    this.matter.world.setBounds(0, 0, 32000, 32000);
+    this.matter.world.setBounds(5 * tileSize, 5 * tileSize, 197 * tileSize, 197 * tileSize);
     this.cameras.main.startFollow(this.spaceShip, true);
     this.cameras.main.zoom = 0.5;
 
@@ -116,11 +116,11 @@ export class GameScene extends Phaser.Scene {
   }
 
   public update() {
-    if (this.gameOver) {
-      return;
-    }
     const cursors = this.cursors;
     if (cursors === undefined) return;
+
+    const timeStamp = Date.now().valueOf();
+    sceneEvents.emit('new-frame', timeStamp);
 
     const speedUpperThreshold = 10;
     const speedDelta = 0.1;
@@ -212,7 +212,7 @@ export class GameScene extends Phaser.Scene {
   addNewPlayer(payload: PlayerJoinedGamePayload) {
     console.log(`New player ${payload.playerId}`);
     const spaceShipShape = this.cache.json.get('spaceship-shape');
-    const player = this.matter.add.image(100, 450, 'spaceship', undefined, {
+    const player = this.matter.add.image(7 * tileSize, 7 * tileSize, 'spaceship-yellow', undefined, {
       vertices: spaceShipShape.spaceship,
       friction: 0,
       frictionStatic: 0,

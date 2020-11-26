@@ -9,8 +9,8 @@ enum LaserToShoot {
 }
 
 class LaserGroup extends Phaser.Physics.Arcade.Group {
+  public static readonly LASER_COOL_DOWN = 10000;
   private readonly shootingCoolDown = 500;
-  private readonly laserCoolDown = 10000;
   private leftLastFire = Date.now().valueOf();
   private rightLastFire = Date.now().valueOf();
   private readonly leftLaser = new Vector2(60, -27);
@@ -25,7 +25,7 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
       classType: Laser, // This is the class we create just below
       active: false,
       visible: false,
-      key: 'laser'
+      key: 'laser-shot'
     });
   }
 
@@ -38,14 +38,17 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
     ) {
       return;
     }
-    if (timestamp - this.leftLastFire > this.laserCoolDown) {
+    if (timestamp - this.leftLastFire > LaserGroup.LASER_COOL_DOWN) {
       this.leftLastFire = timestamp;
       laserToShoot = LaserToShoot.LEFT;
-      sceneEvents.emit('laser-fire-left', timestamp + this.laserCoolDown);
-    } else if (timestamp - this.rightLastFire > this.laserCoolDown) {
+      sceneEvents.emit('laser-fire-left', timestamp + LaserGroup.LASER_COOL_DOWN);
+      if (timestamp - this.rightLastFire > LaserGroup.LASER_COOL_DOWN) {
+        sceneEvents.emit('laser-fire-right', timestamp + this.shootingCoolDown);
+      }
+    } else if (timestamp - this.rightLastFire > LaserGroup.LASER_COOL_DOWN) {
       this.rightLastFire = timestamp;
       laserToShoot = LaserToShoot.RIGHT;
-      sceneEvents.emit('laser-fire-right', timestamp + this.laserCoolDown);
+      sceneEvents.emit('laser-fire-right', timestamp + LaserGroup.LASER_COOL_DOWN);
     }
     if (laserToShoot === LaserToShoot.NONE) {
       return;
@@ -65,7 +68,7 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
 
 class Laser extends Phaser.Physics.Arcade.Sprite {
   constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'laser');
+    super(scene, x, y, 'laser-shot');
   }
 
   fire(x: number, y: number, velocity: Vector2) {
