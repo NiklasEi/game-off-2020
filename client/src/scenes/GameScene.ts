@@ -22,7 +22,10 @@ interface Control {
 
 export class GameScene extends Phaser.Scene {
   private spaceShip!: Phaser.Physics.Matter.Image;
-  private spaceShipEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private spaceShipEmitterLeft!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private spaceShipEmitterRight!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private readonly leftEngine = new Vector2(-35, -25);
+  private readonly rightEngine = new Vector2(-35, 25);
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private readonly gameOver: boolean = false;
   private angularVelocity: number = 0;
@@ -74,15 +77,17 @@ export class GameScene extends Phaser.Scene {
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
     const particles = this.add.particles('fire');
-    this.spaceShipEmitter = particles.createEmitter({
+    const emitterConfig = {
       speed: 10,
-      on: false,
+      on: true,
       lifespan: 400,
       alpha: 1000,
       maxParticles: 100,
       scale: { start: 1.0, end: 0 },
       blendMode: 'ADD'
-    });
+    };
+    this.spaceShipEmitterLeft = particles.createEmitter(emitterConfig);
+    this.spaceShipEmitterRight = particles.createEmitter(emitterConfig);
 
     // The player and its settings
     const spaceShipShape = this.cache.json.get('spaceship-shape');
@@ -96,7 +101,6 @@ export class GameScene extends Phaser.Scene {
     this.matter.world.setBounds(0, 0, 32000, 32000);
     this.cameras.main.startFollow(this.spaceShip, true);
     this.cameras.main.zoom = 0.5;
-    this.spaceShipEmitter.startFollow(this.spaceShip);
 
     this.laserGroup = new LaserGroup(this);
     //  Input Events
@@ -123,12 +127,14 @@ export class GameScene extends Phaser.Scene {
     const speedDelta = 0.1;
     const currentSpeed = this.spaceShip.body.velocity;
     const totalCurrentSpeed = Math.sqrt(currentSpeed.x ** 2 + currentSpeed.y ** 2);
-    const velocityDeltaVector = new Vector2(speedDelta, 0).rotate(this.spaceShip.rotation);
+    const rotation = this.spaceShip.rotation;
+    const velocityDeltaVector = new Vector2(speedDelta, 0).rotate(rotation);
 
     const angularDelta = 0.001;
     const angularVelocityLowerThreshold = 0.01;
     const angularVelocityUpperThreshold = 0.2;
-    this.spaceShipEmitter.on = false;
+    this.spaceShipEmitterLeft.on = false;
+    this.spaceShipEmitterRight.on = false;
 
     if (cursors.left?.isDown || this.keys.A.isDown) {
       this.angularVelocity = this.angularVelocity - angularDelta;
@@ -136,7 +142,18 @@ export class GameScene extends Phaser.Scene {
       this.angularVelocity = this.angularVelocity + angularDelta;
     }
     if (cursors.up?.isDown || this.keys.W.isDown) {
-      this.spaceShipEmitter.on = true;
+      this.spaceShipEmitterLeft.on = true;
+      this.spaceShipEmitterRight.on = true;
+      const leftEnginePosition = this.leftEngine.clone().rotate(rotation);
+      const rightEnginePosition = this.rightEngine.clone().rotate(rotation);
+      this.spaceShipEmitterLeft.setPosition(
+        this.spaceShip.x + leftEnginePosition.x,
+        this.spaceShip.y + leftEnginePosition.y
+      );
+      this.spaceShipEmitterRight.setPosition(
+        this.spaceShip.x + rightEnginePosition.x,
+        this.spaceShip.y + rightEnginePosition.y
+      );
       this.spaceShip.setVelocity(currentSpeed.x + velocityDeltaVector.x, currentSpeed.y + velocityDeltaVector.y);
     } else if (cursors.down?.isDown || this.keys.S.isDown) {
       if (totalCurrentSpeed < speedDelta) {
@@ -230,7 +247,8 @@ export class GameScene extends Phaser.Scene {
 
   shootLaser() {
     if (this.laserGroup) {
-      this.laserGroup.fireLaser(this.spaceShip.x, this.spaceShip.y - 20);
+      const velocity = new Vector2(900, 0).rotate(this.spaceShip.rotation);
+      this.laserGroup.fireLaser(this.spaceShip.x, this.spaceShip.y - 20, velocity);
     }
   }
 
