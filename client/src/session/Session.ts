@@ -60,6 +60,7 @@ export class Session {
       // eslint-disable-next-line no-console
       console.log('Connected to Server');
       this.connected = true;
+      sceneEvents.emit('server-connected');
     };
 
     this.socket.onmessage = (ev) => {
