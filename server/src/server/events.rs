@@ -1,4 +1,6 @@
 use crate::server::game_objects::GameMap;
+use rand::distributions::{Distribution, Standard};
+use rand::Rng;
 use serde;
 use serde::Serialize;
 
@@ -8,20 +10,15 @@ pub struct RoomLeaderEvent {
 }
 
 #[derive(Clone, Debug, Serialize)]
-#[serde(into = "PlayerEvent")]
+#[serde(rename_all = "camelCase")]
 pub struct PlayerJoinedGameEvent {
-    pub player_id: usize,
+    pub player_id: String,
+    pub player_type: PlayerType,
 }
 
 #[derive(Clone, Debug, Serialize)]
-#[serde(into = "PlayerEvent")]
-pub struct PlayerLeftGameEvent {
-    pub player_id: usize,
-}
-
-#[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
-struct PlayerEvent {
+pub struct PlayerLeftGameEvent {
     pub player_id: String,
 }
 
@@ -35,6 +32,33 @@ pub struct GameStateEvent {
     pub payload: serde_json::Value,
 }
 
+#[derive(Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct JoinedGame {
+    pub ok: bool,
+    pub reason: Option<String>,
+    pub player_type: PlayerType,
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub enum PlayerType {
+    BLUE,
+    RED,
+    YELLOW,
+    GREEN,
+}
+
+impl Distribution<PlayerType> for Standard {
+    fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PlayerType {
+        match rng.gen_range(0, 4) {
+            0 => PlayerType::BLUE,
+            1 => PlayerType::RED,
+            2 => PlayerType::YELLOW,
+            _ => PlayerType::GREEN,
+        }
+    }
+}
+
 pub trait MultiplayerEvent {
     fn to_message(&self) -> String;
 }
@@ -42,6 +66,12 @@ pub trait MultiplayerEvent {
 impl MultiplayerEvent for RoomLeaderEvent {
     fn to_message(&self) -> String {
         format!("Event RoomLeader:{}", serde_json::to_string(self).unwrap())
+    }
+}
+
+impl MultiplayerEvent for JoinedGame {
+    fn to_message(&self) -> String {
+        format!("Event JoinGame:{}", serde_json::to_string(self).unwrap())
     }
 }
 
@@ -72,21 +102,5 @@ impl MultiplayerEvent for SetMapGameEvent<'_> {
 impl MultiplayerEvent for GameStateEvent {
     fn to_message(&self) -> String {
         format!("Event GameState:{}", self.payload.to_string())
-    }
-}
-
-impl From<PlayerLeftGameEvent> for PlayerEvent {
-    fn from(player_left_game_event: PlayerLeftGameEvent) -> Self {
-        PlayerEvent {
-            player_id: player_left_game_event.player_id.to_string(),
-        }
-    }
-}
-
-impl From<PlayerJoinedGameEvent> for PlayerEvent {
-    fn from(player_joined_game_event: PlayerJoinedGameEvent) -> Self {
-        PlayerEvent {
-            player_id: player_joined_game_event.player_id.to_string(),
-        }
     }
 }

@@ -13,7 +13,7 @@ use std::time::{Duration, Instant};
 
 #[derive(Default)]
 pub struct PlayerSession {
-    id: usize,
+    id: String,
     game_name: Option<String>,
     /// Client must send ping at least once per 10 seconds (CLIENT_TIMEOUT),
     /// otherwise we drop connection.
@@ -44,7 +44,7 @@ impl PlayerSession {
             Some(game_name) => {
                 let leave_msg = LeaveGame {
                     game_name: game_name.clone(),
-                    player_id: self.id,
+                    player_id: self.id.clone(),
                 };
                 self.issue_system_sync(leave_msg, ctx);
             }
@@ -59,12 +59,11 @@ impl PlayerSession {
         WsGameServer::from_registry()
             .send(join_msg)
             .into_actor(self)
-            .then(|id, act, ctx| {
+            .then(|id, act, _ctx| {
                 if let Ok(id) = id {
                     act.id = id;
                     act.game_name = Some(game_name);
                 }
-                ctx.text("Event JoinGame:{\"ok\": true}");
                 fut::ready(())
             })
             .wait(ctx);
@@ -76,7 +75,7 @@ impl PlayerSession {
                 let msg = GameMessage {
                     game_name: game_name.clone(),
                     message: String::from(msg),
-                    sender_id: self.id,
+                    sender_id: self.id.clone(),
                 };
 
                 // issue_async comes from having the `BrokerIssue` trait in scope.
@@ -90,7 +89,7 @@ impl PlayerSession {
         match &self.game_name {
             Some(game_name) => {
                 let msg = GameState {
-                    sender_id: self.id,
+                    sender_id: self.id.clone(),
                     game_name: game_name.to_owned(),
                     payload,
                     secret,

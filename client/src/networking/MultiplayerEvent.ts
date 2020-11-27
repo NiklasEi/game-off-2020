@@ -26,6 +26,7 @@ export interface GameStatePayload {
 export interface JoinGameAnswerPayload {
   ok: boolean;
   reason?: string;
+  playerType: PlayerType;
 }
 
 export interface SetMapPayload {
@@ -47,12 +48,17 @@ export enum PlanetType {
   WHITE = 'WHITE'
 }
 
+export enum PlayerType {
+  YELLOW = 'YELLOW'
+}
+
 export interface RoomLeaderPayload {
   secret: string;
 }
 
 export interface PlayerJoinedGamePayload {
   playerId: string;
+  playerType: PlayerType;
 }
 
 export interface PlayerLeftGamePayload {

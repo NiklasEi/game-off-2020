@@ -2,6 +2,7 @@ import * as Phaser from 'phaser';
 import { GameMode } from '../session/GameMode';
 import { Session } from '../session/Session';
 import { sceneEvents } from '../events/EventCenter';
+import { PlayerType } from '../networking/MultiplayerEvent';
 
 export default class MainMenu extends Phaser.Scene {
   private singlePlayButton!: Phaser.GameObjects.Image;
@@ -46,17 +47,20 @@ export default class MainMenu extends Phaser.Scene {
           const code = (codeInput as HTMLFormElement).value;
           this.session?.connect(code);
 
-          sceneEvents.once('join-game', ({ ok, reason }: { ok: boolean; reason?: string }) => {
-            if (ok) {
-              this.scene.start('game', { mode: GameMode.MULTI_PLAYER, code, session: this.session });
-            } else {
-              this.multiPlayButton.clearTint();
-              const codeCaption = document.getElementById('codeCaption');
-              if (codeCaption !== null && reason !== undefined) {
-                codeCaption.innerText = reason;
+          sceneEvents.once(
+            'join-game',
+            ({ ok, reason, playerType }: { ok: boolean; reason?: string; playerType?: PlayerType }) => {
+              if (ok) {
+                this.scene.start('game', { mode: GameMode.MULTI_PLAYER, session: this.session, playerType });
+              } else {
+                this.multiPlayButton.clearTint();
+                const codeCaption = document.getElementById('codeCaption');
+                if (codeCaption !== null && reason !== undefined) {
+                  codeCaption.innerText = reason;
+                }
               }
             }
-          });
+          );
         } else {
           const codeCaption = document.getElementById('codeCaption');
           if (codeCaption !== null) {

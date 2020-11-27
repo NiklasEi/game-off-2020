@@ -6,6 +6,7 @@ import {
   PlayerJoinedGamePayload,
   PlayerLeftGamePayload,
   PlayerStateInboundPayload,
+  PlayerType,
   SetMapPayload
 } from '../networking/MultiplayerEvent';
 import { tileSize } from '../utils/constants';
@@ -33,7 +34,7 @@ export class GameScene extends Phaser.Scene {
   private session?: Session;
   private keys!: Control;
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
-  private code?: string;
+  private playerType?: PlayerType;
   private laserGroup?: LaserGroup;
 
   constructor() {
@@ -62,8 +63,8 @@ export class GameScene extends Phaser.Scene {
 
   public init(data: any) {
     this.gameMode = data.mode;
-    this.code = data.code;
     this.session = data.session;
+    this.playerType = data.playerType;
   }
 
   public async create() {
@@ -91,7 +92,8 @@ export class GameScene extends Phaser.Scene {
 
     // The player and its settings
     const spaceShipShape = this.cache.json.get('spaceship-shape');
-    this.spaceShip = this.matter.add.image(7 * tileSize, 7 * tileSize, 'spaceship-yellow', undefined, {
+    const playerSpaceShipKey = this.getPlayerImageKeyFromType(this.playerType);
+    this.spaceShip = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
       vertices: spaceShipShape.spaceship,
       friction: 0,
       frictionStatic: 0,
@@ -212,7 +214,8 @@ export class GameScene extends Phaser.Scene {
   addNewPlayer(payload: PlayerJoinedGamePayload) {
     console.log(`New player ${payload.playerId}`);
     const spaceShipShape = this.cache.json.get('spaceship-shape');
-    const player = this.matter.add.image(7 * tileSize, 7 * tileSize, 'spaceship-yellow', undefined, {
+    const playerSpaceShipKey = this.getPlayerImageKeyFromType(payload.playerType);
+    const player = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
       vertices: spaceShipShape.spaceship,
       friction: 0,
       frictionStatic: 0,
@@ -284,6 +287,18 @@ export class GameScene extends Phaser.Scene {
       default: {
         console.warn(`Unknown planet type ${planetType}, falling back to earth...`);
         return 'planet-earth';
+      }
+    }
+  }
+
+  private getPlayerImageKeyFromType(playerType?: PlayerType) {
+    switch (playerType) {
+      case PlayerType.YELLOW: {
+        return 'spaceship-yellow';
+      }
+      default: {
+        console.warn(`Unknown player type ${playerType}, falling back to yellow...`);
+        return 'spaceship-yellow';
       }
     }
   }
