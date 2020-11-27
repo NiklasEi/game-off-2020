@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Starter project for the Phaser HTML5 game engine",
   "scripts": {
-    "build": "webpack",
+    "build": "SERVER_HOST=game-on-2020.herokuapp.com webpack",
     "start": "webpack-dev-server",
     "lint": "prettier --config .prettierrc --ignore-path .gitignore --check '**/*.ts' && eslint -c .eslintrc.json 'src/**/*.ts'",
     "format": "prettier --config .prettierrc --ignore-path .gitignore --write '**/*.ts' && eslint -c .eslintrc.json 'src/**/*.ts' --fix"
