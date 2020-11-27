@@ -12,8 +12,8 @@ import {
 import { tileSize } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
 import LaserGroup from '../laser/Laser';
-import Vector2 = Phaser.Math.Vector2;
 import { sceneEvents } from '../events/EventCenter';
+import Vector2 = Phaser.Math.Vector2;
 
 interface Control {
   W: any;
@@ -36,6 +36,7 @@ export class GameScene extends Phaser.Scene {
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private playerType?: PlayerType;
   private laserGroup?: LaserGroup;
+  private multiPlayerStarted: boolean = false;
 
   constructor() {
     super({
@@ -68,7 +69,14 @@ export class GameScene extends Phaser.Scene {
   }
 
   public async create() {
-    this.scene.run('gameHud');
+    sceneEvents.once(
+      'start-game',
+      () => {
+        this.multiPlayerStarted = true;
+      },
+      this
+    );
+    this.scene.run('gameHud', { gameMode: this.gameMode, session: this.session });
     // prepare map
     const map = this.make.tilemap({ key: 'space' });
     const backgroundTileset = map.addTilesetImage('background', 'background-tile', tileSize, tileSize, 0, 0);
@@ -118,6 +126,9 @@ export class GameScene extends Phaser.Scene {
   }
 
   public update() {
+    if (this.gameMode === GameMode.MULTI_PLAYER && !this.multiPlayerStarted) {
+      return;
+    }
     const cursors = this.cursors;
     if (cursors === undefined) return;
 
@@ -195,7 +206,7 @@ export class GameScene extends Phaser.Scene {
   }
 
   public sendGameEvents() {
-    if (this.session !== undefined) {
+    if (this.session !== undefined && this.multiPlayerStarted) {
       this.session.sendPlayerStateEvent({
         position: {
           x: this.spaceShip.x,

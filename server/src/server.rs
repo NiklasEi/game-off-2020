@@ -13,12 +13,13 @@ mod planet;
 
 use std::collections::HashMap;
 
-use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message};
+use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message, StartGame};
 use crate::server::events::{JoinedGame, PlayerType, SetMapGameEvent};
 use crate::server::game_objects::GameMap;
 use events::{
     GameStateEvent, MultiplayerEvent, PlayerJoinedGameEvent, PlayerLeftGameEvent, RoomLeaderEvent,
 };
+use serde::export::Option::Some;
 
 type Client = Recipient<Message>;
 
@@ -28,6 +29,7 @@ pub struct Game {
     leader: Option<String>,
     secret: Option<String>,
     map: GameMap,
+    started: bool,
 }
 
 #[derive(Debug)]
@@ -142,24 +144,30 @@ impl Actor for WsGameServer {
         self.subscribe_system_async::<LeaveGame>(ctx);
         self.subscribe_system_async::<GameMessage>(ctx);
         self.subscribe_system_async::<GameState>(ctx);
+        self.subscribe_system_async::<StartGame>(ctx);
     }
 }
 
 impl Handler<JoinGame> for WsGameServer {
-    type Result = MessageResult<JoinGame>;
+    type Result = Result<String, String>;
 
     fn handle(&mut self, msg: JoinGame, _ctx: &mut Self::Context) -> Self::Result {
         let JoinGame { game_name, player } = msg;
 
+        if let Some(game) = self.games.get(&game_name) {
+            if game.started {
+                return Err("The game already started".to_string());
+            }
+        }
         let (id, player_type) = self.add_player_to_game(&game_name, player);
-
         let game = self.games.get(&game_name).expect("Failed to get room");
+
         self.send_message_to_player(
             &id,
             &JoinedGame {
                 ok: true,
                 reason: None,
-                player_type: player_type.clone(),
+                player_type: Some(player_type.clone()),
             }
             .to_message(),
         );
@@ -177,7 +185,7 @@ impl Handler<JoinGame> for WsGameServer {
             .to_message(),
             &id,
         );
-        MessageResult(id)
+        Ok(id)
     }
 }
 
@@ -237,6 +245,24 @@ impl Handler<GameState> for WsGameServer {
                     &GameStateEvent { payload }.to_message(),
                     &sender_id.clone(),
                 );
+            }
+        }
+    }
+}
+
+impl Handler<StartGame> for WsGameServer {
+    type Result = ();
+
+    fn handle(&mut self, msg: StartGame, _ctx: &mut Self::Context) {
+        let StartGame {
+            secret,
+            sender_id,
+            game_name,
+        } = msg;
+        if let Some(room) = self.games.get_mut(&game_name) {
+            if room.leader == Some(sender_id.clone()) && room.secret == Some(secret) {
+                room.started = true;
+                self.send_message_to_game(&game_name, "Event StartGame:{}", &sender_id.clone());
             }
         }
     }

@@ -30,6 +30,7 @@ export class Session {
 
   constructor() {
     this.establishMultiPlayerSession();
+    sceneEvents.once('start-game', this.sendStartGame, this);
   }
 
   public connect(gameCode: string) {
@@ -112,6 +113,12 @@ export class Session {
     }
   }
 
+  public sendStartGame() {
+    if (this.secret !== undefined) {
+      this.sendEvent(MultiplayerEvent.START_GAME, { secret: this.secret });
+    }
+  }
+
   public sendPlayerStateEvent(payload: PlayerStateOutboundPayload) {
     this.sendEvent(MultiplayerEvent.PLAYER_STATE, payload);
   }
@@ -142,6 +149,7 @@ export class Session {
         const state = payload as RoomLeaderPayload;
         this.secret = state.secret;
         this.isRoomLeader = true;
+        sceneEvents.emit('is-room-leader');
         break;
       }
       case MultiplayerEvent.PLAYER_JOINED_GAME: {
@@ -172,6 +180,10 @@ export class Session {
         if (this.gameInitialized) {
           this.gameScene?.setMap(this.mapState);
         }
+        break;
+      }
+      case MultiplayerEvent.START_GAME: {
+        sceneEvents.emit('start-game');
         break;
       }
       case MultiplayerEvent.JOIN_GAME: {

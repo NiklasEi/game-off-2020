@@ -5,7 +5,7 @@ use actix::prelude::*;
 pub struct Message(pub String);
 
 #[derive(Clone, Message)]
-#[rtype(result = "String")]
+#[rtype(result = "Result<String, String>")]
 pub struct JoinGame {
     pub game_name: String,
     pub player: Recipient<Message>,
@@ -25,6 +25,14 @@ pub struct GameState {
     pub sender_id: String,
     pub secret: String,
     pub payload: serde_json::Value,
+}
+
+#[derive(Clone, Message)]
+#[rtype(result = "()")]
+pub struct StartGame {
+    pub secret: String,
+    pub sender_id: String,
+    pub game_name: String,
 }
 
 #[derive(Clone, Message)]

@@ -7,7 +7,7 @@ use actix_web_actors::ws;
 
 use serde_json::json;
 
-use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, Message};
+use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, Message, StartGame};
 use crate::server::WsGameServer;
 use std::time::{Duration, Instant};
 
@@ -59,10 +59,20 @@ impl PlayerSession {
         WsGameServer::from_registry()
             .send(join_msg)
             .into_actor(self)
-            .then(|id, act, _ctx| {
-                if let Ok(id) = id {
-                    act.id = id;
-                    act.game_name = Some(game_name);
+            .then(|result, act, ctx| {
+                if let Ok(result) = result {
+                    match result {
+                        Ok(id) => {
+                            act.id = id;
+                            act.game_name = Some(game_name);
+                        }
+                        Err(reason) => {
+                            ctx.text(format!(
+                                "Event JoinGame:{{\"ok\": false,\"reason\":\"{}\"}}",
+                                reason
+                            ));
+                        }
+                    }
                 }
                 fut::ready(())
             })
@@ -92,6 +102,22 @@ impl PlayerSession {
                     sender_id: self.id.clone(),
                     game_name: game_name.to_owned(),
                     payload,
+                    secret,
+                };
+
+                // issue_async comes from having the `BrokerIssue` trait in scope.
+                self.issue_system_async(msg);
+            }
+            _ => (),
+        }
+    }
+
+    pub fn send_start_game(&self, secret: String) {
+        match &self.game_name {
+            Some(game_name) => {
+                let msg = StartGame {
+                    sender_id: self.id.clone(),
+                    game_name: game_name.to_owned(),
                     secret,
                 };
 
@@ -195,6 +221,19 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerSession {
 
                                 if let Some(secret) = secret {
                                     self.send_game_state(json!(json_map), secret.to_string());
+                                }
+                            }
+                        }
+                        Some("Event StartGame") => {
+                            if let Some(payload) = command.next() {
+                                let json: serde_json::Value =
+                                    serde_json::from_str(payload).expect("malformed_json");
+                                let json_map =
+                                    json.as_object().expect("malformed_json: not an object");
+                                let secret = json_map.get("secret").expect("No secret").as_str();
+
+                                if let Some(secret) = secret {
+                                    self.send_start_game(secret.to_string());
                                 }
                             }
                         }

@@ -2,18 +2,31 @@ import * as Phaser from 'phaser';
 
 import { sceneEvents } from '../events/EventCenter';
 import LaserGroup from '../laser/Laser';
+import { GameMode } from '../session/GameMode';
+import { Session } from '../session/Session';
 
 export default class GameHud extends Phaser.Scene {
   private ping!: Phaser.GameObjects.Text;
   private fps!: Phaser.GameObjects.Text;
+  private waitingForRoomLeader!: Phaser.GameObjects.Text;
+  private pressHereToStartTheGame!: Phaser.GameObjects.Text;
+  private startTheGameButton!: Phaser.GameObjects.Image;
   private coolDownLeft?: number;
   private coolDownRight?: number;
   private leftLaserCharging!: Phaser.GameObjects.Image;
   private rightLaserCharging!: Phaser.GameObjects.Image;
   private readonly frames: number[] = [];
+  private gameMode?: GameMode;
+  private session?: Session;
+  private gameStarted: boolean = false;
 
   constructor() {
     super({ key: 'gameHud' });
+  }
+
+  init(data: any) {
+    this.gameMode = data.gameMode;
+    this.session = data.session;
   }
 
   public updatePing(pingInMilliseconds: number) {
@@ -31,6 +44,25 @@ export default class GameHud extends Phaser.Scene {
     const fps = this.frames.length / diffSecs;
 
     this.fps.setText(`${Math.round(fps)} fps`);
+  }
+
+  private waitInLobby(isLeader: boolean) {
+    if (isLeader) {
+      this.pressHereToStartTheGame = this.add.text(400, 200, 'Click on the blue spaceship below to start the game');
+      this.startTheGameButton = this.add.image(600, 300, 'spaceship-icon');
+      this.startTheGameButton.setInteractive();
+      this.startTheGameButton.on('pointerdown', () => {
+        sceneEvents.emit('start-game');
+      });
+    } else {
+      this.waitingForRoomLeader = this.add.text(430, 200, 'Wait for the room leader to start the game');
+    }
+  }
+
+  private startGame() {
+    this.pressHereToStartTheGame.destroy();
+    this.startTheGameButton.destroy();
+    this.waitingForRoomLeader.destroy();
   }
 
   update() {
@@ -63,11 +95,35 @@ export default class GameHud extends Phaser.Scene {
   }
 
   create() {
+    if (this.gameMode === GameMode.MULTI_PLAYER) {
+      const isLeader = this.session ? this.session.isRoomLeader : false;
+      this.waitInLobby(isLeader);
+    }
     this.ping = this.add.text(1125, 10, '');
     this.fps = this.add.text(10, 10, '');
 
     sceneEvents.on('update-ping', this.updatePing, this);
     sceneEvents.on('new-frame', this.updateFps, this);
+
+    sceneEvents.on(
+      'is-room-leader',
+      () => {
+        if (this.gameStarted || this.gameMode !== GameMode.MULTI_PLAYER) {
+          return;
+        }
+        this.startGame();
+        this.waitInLobby(true);
+      },
+      this
+    );
+
+    sceneEvents.once(
+      'start-game',
+      () => {
+        this.gameStarted = true;
+      },
+      this
+    );
 
     this.leftLaserCharging = this.add.image(this.game.renderer.width / 2 - 20, this.game.renderer.height - 40, 'laser');
     this.leftLaserCharging.setAngle(-90);
@@ -96,6 +152,8 @@ export default class GameHud extends Phaser.Scene {
     const timestamp = Date.now().valueOf();
     this.coolDownLeft = timestamp + LaserGroup.LASER_COOL_DOWN;
     this.coolDownRight = timestamp + LaserGroup.LASER_COOL_DOWN;
+
+    sceneEvents.once('start-game', this.startGame, this);
 
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
       sceneEvents.off('update-ping', this.updatePing, this);

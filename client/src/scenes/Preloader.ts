@@ -34,6 +34,7 @@ export default class Preloader extends Phaser.Scene {
 
     // HUD
     this.load.image('laser', 'assets/spaceship/laser.png');
+    this.load.image('spaceship-icon', 'assets/icon.png');
   }
 
   create() {

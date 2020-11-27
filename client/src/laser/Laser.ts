@@ -20,6 +20,14 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
     // Call the super constructor, passing in a world and a scene
     super(scene.physics.world, scene);
 
+    sceneEvents.once('start-game', () => {
+      const timestamp = Date.now().valueOf();
+      this.leftLastFire = Date.now().valueOf();
+      this.rightLastFire = Date.now().valueOf();
+      sceneEvents.emit('laser-fire-left', timestamp + LaserGroup.LASER_COOL_DOWN);
+      sceneEvents.emit('laser-fire-right', timestamp + LaserGroup.LASER_COOL_DOWN);
+    });
+
     // Initialize the group
     this.createMultiple({
       classType: Laser, // This is the class we create just below
