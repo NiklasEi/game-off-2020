@@ -12,6 +12,12 @@ pub struct JoinGame {
 }
 
 #[derive(Clone, Message)]
+#[rtype(result = "Result<(String, String),String>")]
+pub struct CreateGame {
+    pub player: Recipient<Message>,
+}
+
+#[derive(Clone, Message)]
 #[rtype(result = "()")]
 pub struct LeaveGame {
     pub game_name: String,

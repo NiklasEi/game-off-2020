@@ -39,6 +39,10 @@ export class Session {
     this.sendEvent(MultiplayerEvent.JOIN_GAME, { code: this.gameCode });
   }
 
+  public createGame() {
+    this.sendEvent(MultiplayerEvent.CREATE_GAME, {});
+  }
+
   private establishMultiPlayerSession() {
     const { location } = window;
     const proto = location.protocol.startsWith('https') ? 'wss' : 'ws';
@@ -189,6 +193,7 @@ export class Session {
       }
       case MultiplayerEvent.JOIN_GAME: {
         const answer = payload as JoinGameAnswerPayload;
+        this.gameCode = answer.code;
         sceneEvents.emit(events.joinGame, answer);
         break;
       }

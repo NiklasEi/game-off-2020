@@ -11,6 +11,7 @@ export default class GameHud extends Phaser.Scene {
   private fps!: Phaser.GameObjects.Text;
   private waitingForRoomLeader?: Phaser.GameObjects.Text;
   private pressHereToStartTheGame?: Phaser.GameObjects.Text;
+  private inviteOthers?: Phaser.GameObjects.Text;
   private startTheGameButton?: Phaser.GameObjects.Image;
   private coolDownLeft?: number;
   private coolDownRight?: number;
@@ -19,6 +20,7 @@ export default class GameHud extends Phaser.Scene {
   private readonly frames: number[] = [];
   private gameMode?: GameMode;
   private session?: Session;
+  private code?: string;
   private gameStarted: boolean = false;
 
   constructor() {
@@ -28,6 +30,7 @@ export default class GameHud extends Phaser.Scene {
   init(data: any) {
     this.gameMode = data.gameMode;
     this.session = data.session;
+    this.code = data.code;
   }
 
   public updatePing(pingInMilliseconds: number) {
@@ -49,6 +52,7 @@ export default class GameHud extends Phaser.Scene {
 
   private waitInLobby(isLeader: boolean) {
     if (isLeader) {
+      this.inviteOthers = this.add.text(400, 170, `Invite others with the code ${this.code}`);
       this.pressHereToStartTheGame = this.add.text(400, 200, 'Click on the blue spaceship below to start the game');
       this.startTheGameButton = this.add.image(600, 300, assetKeys.hud.icon);
       this.startTheGameButton.setInteractive();
@@ -64,6 +68,7 @@ export default class GameHud extends Phaser.Scene {
     this.pressHereToStartTheGame?.destroy();
     this.startTheGameButton?.destroy();
     this.waitingForRoomLeader?.destroy();
+    this.inviteOthers?.destroy();
   }
 
   update() {

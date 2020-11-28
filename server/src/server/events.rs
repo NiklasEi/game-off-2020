@@ -37,6 +37,7 @@ pub struct GameStateEvent {
 pub struct JoinedGame {
     pub ok: bool,
     pub reason: Option<String>,
+    pub code: Option<String>,
     pub player_type: Option<PlayerType>,
 }
 

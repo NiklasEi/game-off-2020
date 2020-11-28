@@ -34,4 +34,10 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
   }
 };
 
+const codeInput = document.getElementById('gameCode');
+const search = new URLSearchParams(location.search);
+if (codeInput !== null && search.has('code')) {
+  (codeInput as HTMLFormElement).value = search.get('code');
+}
+
 export const game = new Phaser.Game(gameConfig);

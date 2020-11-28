@@ -34,11 +34,14 @@ export const assetKeys = {
   menu: {
     start: 'start-button',
     controls: 'controls',
-    createUniverse: 'create-universe'
+    createUniverse: 'create-universe',
+    joinUniverse: 'join-universe',
+    play: 'play-button'
   },
   hud: {
     icon: 'spaceship-icon',
-    laser: 'laser'
+    laser: 'laser',
+    roomCode: 'room-code-area'
   },
   map: {
     space: 'space',

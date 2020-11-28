@@ -34,6 +34,7 @@ export class GameScene extends Phaser.Scene {
   private session?: Session;
   private keys!: Control;
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
+  private code?: string;
   private playerType?: PlayerType;
   private laserGroup?: LaserGroup;
   private multiPlayerStarted: boolean = false;
@@ -54,10 +55,19 @@ export class GameScene extends Phaser.Scene {
   public init(data: any) {
     this.gameMode = data.mode;
     this.session = data.session;
+    this.code = data.code;
     this.playerType = data.playerType;
   }
 
   public async create() {
+    const codeInput = document.getElementById('gameCode');
+    if (codeInput !== null) {
+      codeInput.style.display = 'none';
+    }
+    const codeCaption = document.getElementById('codeCaption');
+    if (codeCaption !== null) {
+      codeCaption.style.display = 'none';
+    }
     sceneEvents.once(
       events.startGame,
       () => {
@@ -65,7 +75,7 @@ export class GameScene extends Phaser.Scene {
       },
       this
     );
-    this.scene.run(scenes.gameHud, { gameMode: this.gameMode, session: this.session });
+    this.scene.run(scenes.gameHud, { gameMode: this.gameMode, session: this.session, code: this.code });
     // prepare map
     const map = this.make.tilemap({ key: assetKeys.map.space });
     const spaceTileset = map.addTilesetImage('stars', assetKeys.map.tiles.stars, tileSize, tileSize, 1, 2);

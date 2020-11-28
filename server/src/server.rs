@@ -1,5 +1,5 @@
 use rand::distributions::Alphanumeric;
-use rand::{random, Rng};
+use rand::{random, thread_rng, Rng};
 
 use log::info;
 
@@ -13,7 +13,9 @@ mod planet;
 
 use std::collections::HashMap;
 
-use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message, StartGame};
+use crate::message::{
+    CreateGame, GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message, StartGame,
+};
 use crate::server::events::{JoinedGame, PlayerType, SetMapGameEvent};
 use crate::server::game_objects::GameMap;
 use events::{
@@ -44,6 +46,8 @@ pub struct WsGameServer {
 }
 
 impl WsGameServer {
+    const CODE_CHARS: &'static [u8] = b"ABCDEFGHKLMNOPQRSTUVWXYZ";
+
     fn add_player_to_game(&mut self, game_name: &str, client: Client) -> (String, PlayerType) {
         let mut id = rand::random::<usize>().to_string();
         let player_type: PlayerType = random();
@@ -135,6 +139,16 @@ impl WsGameServer {
 
         Some(())
     }
+
+    fn create_code() -> String {
+        let mut rng = thread_rng();
+        (0..5)
+            .map(|_| {
+                let idx = rng.gen_range(0, Self::CODE_CHARS.len());
+                Self::CODE_CHARS[idx] as char
+            })
+            .collect()
+    }
 }
 
 impl Actor for WsGameServer {
@@ -156,36 +170,66 @@ impl Handler<JoinGame> for WsGameServer {
 
         if let Some(game) = self.games.get(&game_name) {
             if game.started {
-                return Err("The game already started".to_string());
+                return Err("game is running".to_string());
             }
-        }
-        let (id, player_type) = self.add_player_to_game(&game_name, player);
-        let game = self.games.get(&game_name).expect("Failed to get room");
+            let (id, player_type) = self.add_player_to_game(&game_name, player);
+            let game = self.games.get(&game_name).expect("Failed to get room");
 
-        self.send_message_to_player(
-            &id,
-            &JoinedGame {
-                ok: true,
-                reason: None,
-                player_type: Some(player_type.clone()),
+            self.send_message_to_player(
+                &id,
+                &JoinedGame {
+                    ok: true,
+                    reason: None,
+                    code: Some(game_name.clone()),
+                    player_type: Some(player_type.clone()),
+                }
+                .to_message(),
+            );
+            self.send_message_to_player(&id, &SetMapGameEvent { map: &game.map }.to_message());
+            if game.leader.is_none() {
+                info!("Making {} leader of game {}", id, &game_name);
+                self.make_player_leader(&id, String::from(&game_name));
             }
-            .to_message(),
-        );
-        self.send_message_to_player(&id, &SetMapGameEvent { map: &game.map }.to_message());
-        if game.leader.is_none() {
-            info!("Making {} leader of game {}", id, &game_name);
-            self.make_player_leader(&id, String::from(&game_name));
+            self.send_message_to_game(
+                &game_name,
+                &PlayerJoinedGameEvent {
+                    player_id: id.clone(),
+                    player_type,
+                }
+                .to_message(),
+                &id,
+            );
+            return Ok(id);
         }
-        self.send_message_to_game(
-            &game_name,
-            &PlayerJoinedGameEvent {
-                player_id: id.clone(),
-                player_type,
-            }
-            .to_message(),
-            &id,
+        return Err("code invalid".to_string());
+    }
+}
+
+impl Handler<CreateGame> for WsGameServer {
+    type Result = Result<(String, String), String>;
+
+    fn handle(&mut self, msg: CreateGame, ctx: &mut Self::Context) -> Self::Result {
+        let CreateGame { player } = msg;
+
+        let mut code = Self::create_code();
+        while self.games.get(&code).is_some() {
+            code = Self::create_code();
+        }
+
+        self.games.insert(code.clone(), Game::default());
+
+        let join = self.handle(
+            JoinGame {
+                player,
+                game_name: code.clone(),
+            },
+            ctx,
         );
-        Ok(id)
+
+        match join {
+            Ok(id) => Ok((id, code)),
+            Err(reason) => Err(reason),
+        }
     }
 }
 

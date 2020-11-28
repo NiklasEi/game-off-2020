@@ -2,12 +2,13 @@ import * as Phaser from 'phaser';
 import { GameMode } from '../session/GameMode';
 import { Session } from '../session/Session';
 import { sceneEvents } from '../events/EventCenter';
-import { PlayerType } from '../networking/MultiplayerEvent';
+import { JoinGameAnswerPayload, PlayerJoinedGamePayload, PlayerType } from '../networking/MultiplayerEvent';
 import { assetKeys, events, scenes } from '../utils/constants';
 
 export default class MainMenu extends Phaser.Scene {
   private singlePlayButton!: Phaser.GameObjects.Image;
-  private multiPlayButton!: Phaser.GameObjects.Image;
+  private joinMultiPlayButton!: Phaser.GameObjects.Image;
+  private createButton!: Phaser.GameObjects.Image;
   private session?: Session;
 
   constructor() {
@@ -19,16 +20,8 @@ export default class MainMenu extends Phaser.Scene {
   }
 
   create() {
-    this.singlePlayButton = this.add.image(
-      this.game.renderer.width / 2,
-      (this.game.renderer.height * 2) / 3 + 64,
-      assetKeys.menu.controls
-    );
-    this.singlePlayButton = this.add.image(
-      this.game.renderer.width / 2,
-      this.game.renderer.height / 3,
-      assetKeys.menu.start
-    );
+    const controls = this.add.image(this.game.renderer.width / 2, 700, assetKeys.menu.controls);
+    this.singlePlayButton = this.add.image(this.game.renderer.width / 2, 200, assetKeys.menu.start);
     this.singlePlayButton.setInteractive();
     this.singlePlayButton.on('pointerdown', () => {
       this.singlePlayButton.setTint(0x808080);
@@ -36,44 +29,49 @@ export default class MainMenu extends Phaser.Scene {
     this.singlePlayButton.on('pointerup', () => {
       this.scene.start(scenes.gameScene, { mode: GameMode.SINGLE_PLAYER });
     });
+    this.createButton = this.add.image(this.game.renderer.width / 2, 300, assetKeys.menu.createUniverse);
+    this.createButton.setTint(0x808080);
 
-    this.multiPlayButton = this.add.image(
-      this.game.renderer.width / 2,
-      (this.game.renderer.height * 2) / 3,
-      assetKeys.menu.start
-    );
-    this.multiPlayButton.setTint(0x808080);
+    const join = this.add.image(this.game.renderer.width / 2, 400, assetKeys.menu.joinUniverse);
+    this.joinMultiPlayButton = this.add.image(this.game.renderer.width / 2 + 113, 400, assetKeys.menu.play);
+    this.joinMultiPlayButton.setTint(0x808080);
 
     const enableMultiPlayer = () => {
-      this.multiPlayButton.clearTint();
-      this.multiPlayButton.setInteractive();
-      this.multiPlayButton.on('pointerdown', () => {
-        this.multiPlayButton.setTint(0x808080);
+      this.createButton.clearTint();
+      this.createButton.setInteractive();
+      this.createButton.on('pointerdown', () => {
+        this.createButton.setTint(0x808080);
       });
-      this.multiPlayButton.on('pointerup', () => {
+      this.createButton.on('pointerup', () => {
+        this.session?.createGame();
+      });
+
+      this.joinMultiPlayButton.clearTint();
+      this.joinMultiPlayButton.setInteractive();
+      this.joinMultiPlayButton.on('pointerdown', () => {
+        this.joinMultiPlayButton.setTint(0x808080);
+      });
+      this.joinMultiPlayButton.on('pointerup', () => {
         const codeInput = document.getElementById('gameCode');
-        if (codeInput !== null) {
+        if (codeInput !== null && (codeInput as HTMLFormElement).value !== '') {
           const code = (codeInput as HTMLFormElement).value;
           this.session?.connect(code);
-
-          sceneEvents.once(
-            events.joinGame,
-            ({ ok, reason, playerType }: { ok: boolean; reason?: string; playerType?: PlayerType }) => {
-              if (ok) {
-                this.scene.start(scenes.gameScene, { mode: GameMode.MULTI_PLAYER, session: this.session, playerType });
-              } else {
-                this.multiPlayButton.clearTint();
-                const codeCaption = document.getElementById('codeCaption');
-                if (codeCaption !== null && reason !== undefined) {
-                  codeCaption.innerText = reason;
-                }
-              }
-            }
-          );
         } else {
           const codeCaption = document.getElementById('codeCaption');
           if (codeCaption !== null) {
-            codeCaption.innerText = 'Please supply a game code';
+            codeCaption.innerText = 'code missing';
+          }
+        }
+      });
+
+      sceneEvents.on(events.joinGame, ({ ok, reason, playerType, code }: JoinGameAnswerPayload) => {
+        if (ok) {
+          this.scene.start(scenes.gameScene, { mode: GameMode.MULTI_PLAYER, session: this.session, playerType, code });
+        } else {
+          this.joinMultiPlayButton.clearTint();
+          const codeCaption = document.getElementById('codeCaption');
+          if (codeCaption !== null && reason !== undefined) {
+            codeCaption.innerText = reason;
           }
         }
       });
@@ -84,13 +82,5 @@ export default class MainMenu extends Phaser.Scene {
     } else {
       sceneEvents.once(events.serverConnected, enableMultiPlayer);
     }
-  }
-
-  private addControls(height: number) {
-    this.add.text(this.game.renderer.width / 2 - 106, height + 16, 'move');
-    this.add.text(this.game.renderer.width / 2 + 39, height, 'W / ⬆️');
-    this.add.text(this.game.renderer.width / 2 - 16, height + 32, 'A / ⬅️    S / ️⬇    D / ➡️');
-    this.add.text(this.game.renderer.width / 2 - 106, height + 80, 'shoot');
-    this.add.text(this.game.renderer.width / 2 + 39, height + 80, 'space');
   }
 }
