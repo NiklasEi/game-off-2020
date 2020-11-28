@@ -57,6 +57,7 @@ export default class MainMenu extends Phaser.Scene {
           const code = (codeInput as HTMLFormElement).value;
           this.session?.connect(code);
         } else {
+          this.joinMultiPlayButton.clearTint();
           const codeCaption = document.getElementById('codeCaption');
           if (codeCaption !== null) {
             codeCaption.innerText = 'code missing';
@@ -64,9 +65,15 @@ export default class MainMenu extends Phaser.Scene {
         }
       });
 
-      sceneEvents.on(events.joinGame, ({ ok, reason, playerType, code }: JoinGameAnswerPayload) => {
+      sceneEvents.on(events.joinGame, ({ ok, reason, playerType, code, spawn }: JoinGameAnswerPayload) => {
         if (ok) {
-          this.scene.start(scenes.gameScene, { mode: GameMode.MULTI_PLAYER, session: this.session, playerType, code });
+          this.scene.start(scenes.gameScene, {
+            mode: GameMode.MULTI_PLAYER,
+            session: this.session,
+            playerType,
+            code,
+            spawn
+          });
         } else {
           this.joinMultiPlayButton.clearTint();
           const codeCaption = document.getElementById('codeCaption');

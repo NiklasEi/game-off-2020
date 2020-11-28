@@ -17,7 +17,7 @@ use crate::message::{
     CreateGame, GameMessage, GameState, JoinGame, LeaveGame, ListGames, Message, StartGame,
 };
 use crate::server::events::{JoinedGame, PlayerType, SetMapGameEvent};
-use crate::server::game_objects::GameMap;
+use crate::server::game_objects::{Coordinates, GameMap};
 use events::{
     GameStateEvent, MultiplayerEvent, PlayerJoinedGameEvent, PlayerLeftGameEvent, RoomLeaderEvent,
 };
@@ -38,6 +38,7 @@ pub struct Game {
 pub struct Player {
     client: Client,
     player_type: PlayerType,
+    spawn: Coordinates,
 }
 
 #[derive(Default)]
@@ -48,9 +49,13 @@ pub struct WsGameServer {
 impl WsGameServer {
     const CODE_CHARS: &'static [u8] = b"ABCDEFGHKLMNOPQRSTUVWXYZ";
 
-    fn add_player_to_game(&mut self, game_name: &str, client: Client) -> (String, PlayerType) {
+    fn add_player_to_game(
+        &mut self,
+        game_name: &str,
+        client: Client,
+    ) -> (String, PlayerType, Coordinates) {
         let mut id = rand::random::<usize>().to_string();
-        let player_type: PlayerType = random();
+        let mut player_type: PlayerType = random();
 
         let game = self
             .games
@@ -63,25 +68,37 @@ impl WsGameServer {
                 break;
             }
         }
+        loop {
+            if game
+                .players
+                .iter()
+                .any(|(_, p)| p.player_type == player_type)
+            {
+                player_type = random();
+            } else {
+                break;
+            }
+        }
         game.players.iter().for_each(|(player_id, player)| {
             client
                 .do_send(Message(
                     PlayerJoinedGameEvent {
                         player_id: player_id.clone(),
                         player_type: player.player_type.clone(),
+                        spawn: player.spawn.clone(),
                     }
                     .to_message(),
                 ))
                 .ok();
         });
-        game.players.insert(
-            id.clone(),
-            Player {
-                client,
-                player_type: player_type.clone(),
-            },
-        );
-        (id, player_type)
+        let spawn = game.map.get_spawn_for_player(game.players.len());
+        let player = Player {
+            client,
+            player_type: player_type.clone(),
+            spawn: spawn.clone(),
+        };
+        game.players.insert(id.clone(), player);
+        (id, player_type, spawn)
     }
 
     fn send_message_to_game(&mut self, game_name: &str, msg: &str, src: &String) -> Option<()> {
@@ -172,7 +189,10 @@ impl Handler<JoinGame> for WsGameServer {
             if game.started {
                 return Err("game is running".to_string());
             }
-            let (id, player_type) = self.add_player_to_game(&game_name, player);
+            if game.map.player_cap == game.players.len() {
+                return Err("game is full".to_string());
+            }
+            let (id, player_type, spawn) = self.add_player_to_game(&game_name, player);
             let game = self.games.get(&game_name).expect("Failed to get room");
 
             self.send_message_to_player(
@@ -182,6 +202,7 @@ impl Handler<JoinGame> for WsGameServer {
                     reason: None,
                     code: Some(game_name.clone()),
                     player_type: Some(player_type.clone()),
+                    spawn: Some(spawn.clone()),
                 }
                 .to_message(),
             );
@@ -195,6 +216,7 @@ impl Handler<JoinGame> for WsGameServer {
                 &PlayerJoinedGameEvent {
                     player_id: id.clone(),
                     player_type,
+                    spawn,
                 }
                 .to_message(),
                 &id,

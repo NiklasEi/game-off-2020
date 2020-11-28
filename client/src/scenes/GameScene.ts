@@ -7,6 +7,7 @@ import {
   PlayerLeftGamePayload,
   PlayerStateInboundPayload,
   PlayerType,
+  Position,
   SetMapPayload
 } from '../networking/MultiplayerEvent';
 import { assetKeys, bodyLabels, events, scenes, tileSize } from '../utils/constants';
@@ -36,6 +37,10 @@ export class GameScene extends Phaser.Scene {
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private code?: string;
   private playerType?: PlayerType;
+  private spawn: Position = {
+    x: 7 * tileSize,
+    y: 7 * tileSize
+  };
   private laserGroup?: LaserGroup;
   private multiPlayerStarted: boolean = false;
   matterCollision: any;
@@ -56,6 +61,9 @@ export class GameScene extends Phaser.Scene {
     this.gameMode = data.mode;
     this.session = data.session;
     this.code = data.code;
+    if (data.spawn !== undefined) {
+      this.spawn = data.spawn;
+    }
     this.playerType = data.playerType;
   }
 
@@ -98,7 +106,7 @@ export class GameScene extends Phaser.Scene {
     // The player and its settings
     const spaceShipShape = this.cache.json.get(assetKeys.ship.shape);
     const playerSpaceShipKey = this.getPlayerImageKeyFromType(this.playerType);
-    this.spaceShip = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
+    this.spaceShip = this.matter.add.image(this.spawn.x, this.spawn.y, playerSpaceShipKey, undefined, {
       vertices: spaceShipShape,
       friction: 0,
       frictionStatic: 0,
@@ -233,7 +241,7 @@ export class GameScene extends Phaser.Scene {
     console.log(`New player ${payload.playerId}`);
     const spaceShipShape = this.cache.json.get(assetKeys.ship.shape);
     const playerSpaceShipKey = this.getPlayerImageKeyFromType(payload.playerType);
-    const player = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
+    const player = this.matter.add.image(payload.spawn.x, payload.spawn.y, playerSpaceShipKey, undefined, {
       vertices: spaceShipShape,
       friction: 0,
       frictionStatic: 0,
@@ -249,9 +257,9 @@ export class GameScene extends Phaser.Scene {
     this.players = this.players.filter((player) => {
       if (player.name === payload.playerId) {
         player.destroy();
-        return true;
+        return false;
       }
-      return false;
+      return true;
     });
   }
 

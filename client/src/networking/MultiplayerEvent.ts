@@ -33,11 +33,11 @@ export interface JoinGameAnswerPayload {
   ok: boolean;
   reason?: string;
   code?: string;
-  playerType: PlayerType;
+  playerType?: PlayerType;
+  spawn?: Position;
 }
 
 export interface SetMapPayload {
-  startPoint: Position;
   planets: Planet[];
 }
 
@@ -66,6 +66,7 @@ export interface RoomLeaderPayload {
 export interface PlayerJoinedGamePayload {
   playerId: string;
   playerType: PlayerType;
+  spawn: Position;
 }
 
 export interface PlayerLeftGamePayload {
@@ -84,7 +85,7 @@ export interface Entity {
 }
 
 type Velocity = Position;
-interface Position {
+export interface Position {
   x: number;
   y: number;
 }
