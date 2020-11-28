@@ -12,7 +12,6 @@ export default class Preloader extends Phaser.Scene {
 
   preload() {
     // map
-    this.load.image(assetKeys.map.tiles.background, 'assets/map/background.png');
     this.load.image(assetKeys.map.tiles.stars, 'assets/map/stars_tileset_extruded.png');
     this.load.tilemapTiledJSON(assetKeys.map.space, 'assets/map/space.json');
 

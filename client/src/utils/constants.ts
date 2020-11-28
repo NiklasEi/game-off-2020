@@ -43,8 +43,7 @@ export const assetKeys = {
   map: {
     space: 'space',
     tiles: {
-      stars: 'stars-tiles',
-      background: 'background-tile'
+      stars: 'stars-tiles'
     }
   }
 };
