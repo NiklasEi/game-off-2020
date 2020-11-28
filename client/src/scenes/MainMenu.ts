@@ -3,7 +3,7 @@ import { GameMode } from '../session/GameMode';
 import { Session } from '../session/Session';
 import { sceneEvents } from '../events/EventCenter';
 import { PlayerType } from '../networking/MultiplayerEvent';
-import { events } from '../utils/constants';
+import { assetKeys, events, scenes } from '../utils/constants';
 
 export default class MainMenu extends Phaser.Scene {
   private singlePlayButton!: Phaser.GameObjects.Image;
@@ -11,7 +11,7 @@ export default class MainMenu extends Phaser.Scene {
   private session?: Session;
 
   constructor() {
-    super('mainMenu');
+    super(scenes.mainMenu);
   }
 
   init(data: any) {
@@ -19,20 +19,28 @@ export default class MainMenu extends Phaser.Scene {
   }
 
   create() {
-    this.addControls((this.game.renderer.height * 2) / 3 + 64);
-    this.singlePlayButton = this.add.image(this.game.renderer.width / 2, this.game.renderer.height / 3, 'start-button');
+    this.singlePlayButton = this.add.image(
+      this.game.renderer.width / 2,
+      (this.game.renderer.height * 2) / 3 + 64,
+      assetKeys.menu.controls
+    );
+    this.singlePlayButton = this.add.image(
+      this.game.renderer.width / 2,
+      this.game.renderer.height / 3,
+      assetKeys.menu.start
+    );
     this.singlePlayButton.setInteractive();
     this.singlePlayButton.on('pointerdown', () => {
       this.singlePlayButton.setTint(0x808080);
     });
     this.singlePlayButton.on('pointerup', () => {
-      this.scene.start('game', { mode: GameMode.SINGLE_PLAYER });
+      this.scene.start(scenes.gameScene, { mode: GameMode.SINGLE_PLAYER });
     });
 
     this.multiPlayButton = this.add.image(
       this.game.renderer.width / 2,
       (this.game.renderer.height * 2) / 3,
-      'start-button'
+      assetKeys.menu.start
     );
     this.multiPlayButton.setTint(0x808080);
 
@@ -52,7 +60,7 @@ export default class MainMenu extends Phaser.Scene {
             events.joinGame,
             ({ ok, reason, playerType }: { ok: boolean; reason?: string; playerType?: PlayerType }) => {
               if (ok) {
-                this.scene.start('game', { mode: GameMode.MULTI_PLAYER, session: this.session, playerType });
+                this.scene.start(scenes.gameScene, { mode: GameMode.MULTI_PLAYER, session: this.session, playerType });
               } else {
                 this.multiPlayButton.clearTint();
                 const codeCaption = document.getElementById('codeCaption');

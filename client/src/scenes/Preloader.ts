@@ -1,32 +1,32 @@
 import * as Phaser from 'phaser';
 import { Session } from '../session/Session';
+import { assetKeys, scenes } from '../utils/constants';
 
 export default class Preloader extends Phaser.Scene {
   private readonly session: Session;
 
   constructor() {
-    super('preloader');
+    super(scenes.preloader);
     this.session = new Session();
   }
 
   preload() {
     // map
-    this.load.image('background-tile', 'assets/map/background.png');
-    this.load.image('stars-tiles', 'assets/map/stars_tileset_extruded.png');
-    this.load.tilemapTiledJSON('space', 'assets/map/space.json');
+    this.load.image(assetKeys.map.tiles.stars, 'assets/map/stars_tileset_extruded.png');
+    this.load.tilemapTiledJSON(assetKeys.map.space, 'assets/map/space.json');
 
     // planets
-    this.load.image('planet-earth', 'assets/map/planets/earth.png');
-    this.load.image('planet-gas', 'assets/map/planets/gas.png');
-    this.load.image('planet-red', 'assets/map/planets/red.png');
-    this.load.image('planet-white', 'assets/map/planets/white.png');
-    this.load.image('planet-yellow', 'assets/map/planets/yellow.png');
+    this.load.image(assetKeys.planets.earth, 'assets/map/planets/earth.png');
+    this.load.image(assetKeys.planets.gas, 'assets/map/planets/gas.png');
+    this.load.image(assetKeys.planets.red, 'assets/map/planets/red.png');
+    this.load.image(assetKeys.planets.white, 'assets/map/planets/white.png');
+    this.load.image(assetKeys.planets.yellow, 'assets/map/planets/yellow.png');
 
     // space ship
-    this.load.image('spaceship-yellow', 'assets/spaceship/yellow.png');
-    this.load.json('spaceship-shape', 'assets/spaceship/spaceship.json');
-    this.load.image('fire', 'assets/particles/fire.png');
-    this.load.image('laser-shot', 'assets/spaceship/laser-shot.png');
+    this.load.image(assetKeys.ship.yellow, 'assets/spaceship/yellow.png');
+    this.load.json(assetKeys.ship.shape, 'assets/spaceship/spaceship.json');
+    this.load.image(assetKeys.ship.fire, 'assets/particles/fire.png');
+    this.load.image(assetKeys.ship.laserShot, 'assets/spaceship/laser-shot.png');
 
     // asteroids
     this.load.image('asteroid-1', 'assets/particles/astroid1.png')
@@ -37,15 +37,16 @@ export default class Preloader extends Phaser.Scene {
     this.load.image('asteroid-6', 'assets/particles/astroid6.png')
 
     // menu
-    this.load.image('start-button', 'assets/mainMenu/start.jpeg');
-    this.load.image('restart-button', 'assets/mainMenu/restart.jpeg');
+    this.load.image(assetKeys.menu.start, 'assets/mainMenu/start.jpeg');
+    this.load.image(assetKeys.menu.controls, 'assets/mainMenu/controls.png');
+    this.load.image(assetKeys.menu.createUniverse, 'assets/mainMenu/createButton.png');
 
     // HUD
-    this.load.image('laser', 'assets/spaceship/laser.png');
-    this.load.image('spaceship-icon', 'assets/icon.png');
+    this.load.image(assetKeys.hud.laser, 'assets/spaceship/laser.png');
+    this.load.image(assetKeys.hud.icon, 'assets/icon.png');
   }
 
   create() {
-    this.scene.start('mainMenu', { session: this.session });
+    this.scene.start(scenes.mainMenu, { session: this.session });
   }
 }

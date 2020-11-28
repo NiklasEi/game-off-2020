@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import Vector2 = Phaser.Math.Vector2;
 import { sceneEvents } from '../events/EventCenter';
 import { GameScene } from '../scenes/GameScene';
-import { bodyLabels, events } from '../utils/constants';
+import { assetKeys, bodyLabels, events } from '../utils/constants';
 
 enum LaserToShoot {
   LEFT,
@@ -60,12 +60,18 @@ class LaserGroup {
         ? this.rightLaser.clone().rotate(rotation)
         : this.leftLaser.clone().rotate(rotation);
 
-    const laser = this.gameScene.matter.add.image(x + laserPosition.x, y + laserPosition.y, 'laser-shot', undefined, {
-      friction: 0,
-      frictionStatic: 0,
-      frictionAir: 0,
-      label: bodyLabels.ownLaserShot
-    });
+    const laser = this.gameScene.matter.add.image(
+      x + laserPosition.x,
+      y + laserPosition.y,
+      assetKeys.ship.laserShot,
+      undefined,
+      {
+        friction: 0,
+        frictionStatic: 0,
+        frictionAir: 0,
+        label: bodyLabels.ownLaserShot
+      }
+    );
     laser.setRotation(velocity.angle() + Math.PI / 2);
     laser.setVelocity(velocity.x, velocity.y);
   }
