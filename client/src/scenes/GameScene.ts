@@ -9,7 +9,7 @@ import {
   PlayerType,
   SetMapPayload
 } from '../networking/MultiplayerEvent';
-import { bodyLabels, events, tileSize } from '../utils/constants';
+import { assetKeys, bodyLabels, events, scenes, tileSize } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
 import LaserGroup from '../laser/Laser';
 import { sceneEvents } from '../events/EventCenter';
@@ -40,7 +40,7 @@ export class GameScene extends Phaser.Scene {
   matterCollision: any;
 
   constructor() {
-    super('game');
+    super(scenes.gameScene);
   }
 
   public preload() {
@@ -65,16 +65,23 @@ export class GameScene extends Phaser.Scene {
       },
       this
     );
-    this.scene.run('gameHud', { gameMode: this.gameMode, session: this.session });
+    this.scene.run(scenes.gameHud, { gameMode: this.gameMode, session: this.session });
     // prepare map
-    const map = this.make.tilemap({ key: 'space' });
-    const backgroundTileset = map.addTilesetImage('background', 'background-tile', tileSize, tileSize, 0, 0);
-    const spaceTileset = map.addTilesetImage('stars', 'stars-tiles', tileSize, tileSize, 1, 2);
+    const map = this.make.tilemap({ key: assetKeys.map.space });
+    const backgroundTileset = map.addTilesetImage(
+      'background',
+      assetKeys.map.tiles.background,
+      tileSize,
+      tileSize,
+      0,
+      0
+    );
+    const spaceTileset = map.addTilesetImage('stars', assetKeys.map.tiles.stars, tileSize, tileSize, 1, 2);
     map.createStaticLayer('background', backgroundTileset);
     map.createStaticLayer('stars', spaceTileset);
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
-    const particles = this.add.particles('fire');
+    const particles = this.add.particles(assetKeys.ship.fire);
     const emitterConfig = {
       speed: 10,
       on: false,
@@ -88,7 +95,7 @@ export class GameScene extends Phaser.Scene {
     this.spaceShipEmitterRight = particles.createEmitter(emitterConfig);
 
     // The player and its settings
-    const spaceShipShape = this.cache.json.get('spaceship-shape');
+    const spaceShipShape = this.cache.json.get(assetKeys.ship.shape);
     const playerSpaceShipKey = this.getPlayerImageKeyFromType(this.playerType);
     this.spaceShip = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
       vertices: spaceShipShape,
@@ -223,7 +230,7 @@ export class GameScene extends Phaser.Scene {
 
   addNewPlayer(payload: PlayerJoinedGamePayload) {
     console.log(`New player ${payload.playerId}`);
-    const spaceShipShape = this.cache.json.get('spaceship-shape');
+    const spaceShipShape = this.cache.json.get(assetKeys.ship.shape);
     const playerSpaceShipKey = this.getPlayerImageKeyFromType(payload.playerType);
     const player = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
       vertices: spaceShipShape,
@@ -281,23 +288,23 @@ export class GameScene extends Phaser.Scene {
   private getPlanetImageKeyFromType(planetType: PlanetType) {
     switch (planetType) {
       case PlanetType.EARTH: {
-        return 'planet-earth';
+        return assetKeys.planets.earth;
       }
       case PlanetType.GAS: {
-        return 'planet-gas';
+        return assetKeys.planets.gas;
       }
       case PlanetType.RED: {
-        return 'planet-red';
+        return assetKeys.planets.red;
       }
       case PlanetType.WHITE: {
-        return 'planet-white';
+        return assetKeys.planets.white;
       }
       case PlanetType.YELLOW: {
-        return 'planet-yellow';
+        return assetKeys.planets.yellow;
       }
       default: {
         console.warn(`Unknown planet type ${planetType}, falling back to earth...`);
-        return 'planet-earth';
+        return assetKeys.planets.earth;
       }
     }
   }
@@ -305,11 +312,11 @@ export class GameScene extends Phaser.Scene {
   private getPlayerImageKeyFromType(playerType?: PlayerType) {
     switch (playerType) {
       case PlayerType.YELLOW: {
-        return 'spaceship-yellow';
+        return assetKeys.ship.yellow;
       }
       default: {
         console.warn(`Unknown player type ${playerType}, falling back to yellow...`);
-        return 'spaceship-yellow';
+        return assetKeys.ship.yellow;
       }
     }
   }

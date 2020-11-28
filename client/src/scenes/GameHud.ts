@@ -4,14 +4,14 @@ import { sceneEvents } from '../events/EventCenter';
 import LaserGroup from '../laser/Laser';
 import { GameMode } from '../session/GameMode';
 import { Session } from '../session/Session';
-import { events } from '../utils/constants';
+import { assetKeys, events, scenes } from '../utils/constants';
 
 export default class GameHud extends Phaser.Scene {
   private ping!: Phaser.GameObjects.Text;
   private fps!: Phaser.GameObjects.Text;
-  private waitingForRoomLeader!: Phaser.GameObjects.Text;
-  private pressHereToStartTheGame!: Phaser.GameObjects.Text;
-  private startTheGameButton!: Phaser.GameObjects.Image;
+  private waitingForRoomLeader?: Phaser.GameObjects.Text;
+  private pressHereToStartTheGame?: Phaser.GameObjects.Text;
+  private startTheGameButton?: Phaser.GameObjects.Image;
   private coolDownLeft?: number;
   private coolDownRight?: number;
   private leftLaserCharging!: Phaser.GameObjects.Image;
@@ -22,7 +22,7 @@ export default class GameHud extends Phaser.Scene {
   private gameStarted: boolean = false;
 
   constructor() {
-    super({ key: 'gameHud' });
+    super(scenes.gameHud);
   }
 
   init(data: any) {
@@ -50,7 +50,7 @@ export default class GameHud extends Phaser.Scene {
   private waitInLobby(isLeader: boolean) {
     if (isLeader) {
       this.pressHereToStartTheGame = this.add.text(400, 200, 'Click on the blue spaceship below to start the game');
-      this.startTheGameButton = this.add.image(600, 300, 'spaceship-icon');
+      this.startTheGameButton = this.add.image(600, 300, assetKeys.hud.icon);
       this.startTheGameButton.setInteractive();
       this.startTheGameButton.on('pointerdown', () => {
         sceneEvents.emit(events.startGame);
@@ -61,9 +61,9 @@ export default class GameHud extends Phaser.Scene {
   }
 
   private startGame() {
-    this.pressHereToStartTheGame.destroy();
-    this.startTheGameButton.destroy();
-    this.waitingForRoomLeader.destroy();
+    this.pressHereToStartTheGame?.destroy();
+    this.startTheGameButton?.destroy();
+    this.waitingForRoomLeader?.destroy();
   }
 
   update() {
@@ -126,12 +126,16 @@ export default class GameHud extends Phaser.Scene {
       this
     );
 
-    this.leftLaserCharging = this.add.image(this.game.renderer.width / 2 - 20, this.game.renderer.height - 40, 'laser');
+    this.leftLaserCharging = this.add.image(
+      this.game.renderer.width / 2 - 20,
+      this.game.renderer.height - 40,
+      assetKeys.hud.laser
+    );
     this.leftLaserCharging.setAngle(-90);
     this.rightLaserCharging = this.add.image(
       this.game.renderer.width / 2 + 20,
       this.game.renderer.height - 40,
-      'laser'
+      assetKeys.hud.laser
     );
     this.rightLaserCharging.setAngle(-90);
     sceneEvents.on(
