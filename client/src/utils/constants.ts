@@ -14,5 +14,6 @@ export const events = {
   joinGame: 'join-game',
   serverConnected: 'server-connected',
   playerIsRoomLeader: 'is-room-leader',
-  newFrameTimestamp: 'new-frame'
+  newFrameTimestamp: 'new-frame',
+  shootAsteroids: 'shoot-asteroids'
 };

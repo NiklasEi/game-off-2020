@@ -11,9 +11,10 @@ import {
 } from '../networking/MultiplayerEvent';
 import { bodyLabels, events, tileSize } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
-import LaserGroup from '../laser/Laser';
 import { sceneEvents } from '../events/EventCenter';
 import Vector2 = Phaser.Math.Vector2;
+import AsteroidGroup from "../asteroid/AsteroidGroup";
+import LaserGroup from '../laser/Laser';
 
 interface Control {
   W: any;
@@ -36,6 +37,7 @@ export class GameScene extends Phaser.Scene {
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private playerType?: PlayerType;
   private laserGroup?: LaserGroup;
+  private asteroids?: AsteroidGroup;
   private multiPlayerStarted: boolean = false;
   matterCollision: any;
 
@@ -111,6 +113,8 @@ export class GameScene extends Phaser.Scene {
     this.cameras.main.zoom = 0.5;
 
     this.laserGroup = new LaserGroup(this);
+    this.asteroids = new AsteroidGroup(this);
+
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
 
@@ -128,6 +132,12 @@ export class GameScene extends Phaser.Scene {
     if (this.gameMode === GameMode.MULTI_PLAYER && !this.multiPlayerStarted) {
       return;
     }
+
+    if (this.asteroids) {
+      const velocity = new Vector2(15, 0).rotate(this.spaceShip.rotation);
+      this.asteroids.shootAsteroids(this.spaceShip.x, this.spaceShip.y, velocity);
+    }
+
     const cursors = this.cursors;
     if (cursors === undefined) return;
 
