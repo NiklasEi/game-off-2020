@@ -4,6 +4,7 @@ import { sceneEvents } from '../events/EventCenter';
 import LaserGroup from '../laser/Laser';
 import { GameMode } from '../session/GameMode';
 import { Session } from '../session/Session';
+import { events } from '../utils/constants';
 
 export default class GameHud extends Phaser.Scene {
   private ping!: Phaser.GameObjects.Text;
@@ -52,7 +53,7 @@ export default class GameHud extends Phaser.Scene {
       this.startTheGameButton = this.add.image(600, 300, 'spaceship-icon');
       this.startTheGameButton.setInteractive();
       this.startTheGameButton.on('pointerdown', () => {
-        sceneEvents.emit('start-game');
+        sceneEvents.emit(events.startGame);
       });
     } else {
       this.waitingForRoomLeader = this.add.text(430, 200, 'Wait for the room leader to start the game');
@@ -102,11 +103,11 @@ export default class GameHud extends Phaser.Scene {
     this.ping = this.add.text(1125, 10, '');
     this.fps = this.add.text(10, 10, '');
 
-    sceneEvents.on('update-ping', this.updatePing, this);
-    sceneEvents.on('new-frame', this.updateFps, this);
+    sceneEvents.on(events.updatePing, this.updatePing, this);
+    sceneEvents.on(events.newFrameTimestamp, this.updateFps, this);
 
     sceneEvents.on(
-      'is-room-leader',
+      events.playerIsRoomLeader,
       () => {
         if (this.gameStarted || this.gameMode !== GameMode.MULTI_PLAYER) {
           return;
@@ -118,7 +119,7 @@ export default class GameHud extends Phaser.Scene {
     );
 
     sceneEvents.once(
-      'start-game',
+      events.startGame,
       () => {
         this.gameStarted = true;
       },
@@ -134,14 +135,14 @@ export default class GameHud extends Phaser.Scene {
     );
     this.rightLaserCharging.setAngle(-90);
     sceneEvents.on(
-      'laser-fire-left',
+      events.laserFireLeft,
       (rechargedIn: number) => {
         this.coolDownLeft = rechargedIn;
       },
       this
     );
     sceneEvents.on(
-      'laser-fire-right',
+      events.laserFireRight,
       (rechargedIn: number) => {
         this.coolDownRight = rechargedIn;
       },
@@ -153,10 +154,10 @@ export default class GameHud extends Phaser.Scene {
     this.coolDownLeft = timestamp + LaserGroup.LASER_COOL_DOWN;
     this.coolDownRight = timestamp + LaserGroup.LASER_COOL_DOWN;
 
-    sceneEvents.once('start-game', this.startGame, this);
+    sceneEvents.once(events.startGame, this.startGame, this);
 
     this.events.on(Phaser.Scenes.Events.SHUTDOWN, () => {
-      sceneEvents.off('update-ping', this.updatePing, this);
+      sceneEvents.off(events.updatePing, this.updatePing, this);
       if (this.coolDownLeft) {
         clearTimeout(this.coolDownLeft);
       }

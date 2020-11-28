@@ -3,6 +3,8 @@ import MainMenu from './scenes/MainMenu';
 import Preloader from './scenes/Preloader';
 import * as Phaser from 'phaser';
 import GameHud from './scenes/GameHud';
+// @ts-ignore
+import * as PhaserMatterCollisionPlugin from 'phaser-matter-collision-plugin';
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   title: 'Phaser',
@@ -20,6 +22,15 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
       debug: true,
       gravity: false
     }
+  },
+  plugins: {
+    scene: [
+      {
+        plugin: PhaserMatterCollisionPlugin, // The plugin class
+        key: 'matterCollision', // Where to store in Scene.Systems, e.g. scene.sys.matterCollision
+        mapping: 'matterCollision' // Where to store in the Scene, e.g. scene.matterCollision
+      }
+    ]
   }
 };
 

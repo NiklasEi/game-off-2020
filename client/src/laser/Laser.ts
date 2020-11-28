@@ -1,6 +1,8 @@
 import * as Phaser from 'phaser';
 import Vector2 = Phaser.Math.Vector2;
 import { sceneEvents } from '../events/EventCenter';
+import { GameScene } from '../scenes/GameScene';
+import { bodyLabels, events } from '../utils/constants';
 
 enum LaserToShoot {
   LEFT,
@@ -8,32 +10,23 @@ enum LaserToShoot {
   NONE
 }
 
-class LaserGroup extends Phaser.Physics.Arcade.Group {
-  public static readonly LASER_COOL_DOWN = 10000;
+class LaserGroup {
+  public static readonly LASER_COOL_DOWN = 1000;
   private readonly shootingCoolDown = 500;
   private leftLastFire = Date.now().valueOf();
   private rightLastFire = Date.now().valueOf();
-  private readonly leftLaser = new Vector2(60, -27);
-  private readonly rightLaser = new Vector2(60, 26);
+  private readonly leftLaser = new Vector2(80, -27);
+  private readonly rightLaser = new Vector2(80, 26);
+  private readonly gameScene: GameScene;
 
-  constructor(scene: Phaser.Scene) {
-    // Call the super constructor, passing in a world and a scene
-    super(scene.physics.world, scene);
-
-    sceneEvents.once('start-game', () => {
+  constructor(gameScene: GameScene) {
+    this.gameScene = gameScene;
+    sceneEvents.once(events.startGame, () => {
       const timestamp = Date.now().valueOf();
       this.leftLastFire = Date.now().valueOf();
       this.rightLastFire = Date.now().valueOf();
-      sceneEvents.emit('laser-fire-left', timestamp + LaserGroup.LASER_COOL_DOWN);
-      sceneEvents.emit('laser-fire-right', timestamp + LaserGroup.LASER_COOL_DOWN);
-    });
-
-    // Initialize the group
-    this.createMultiple({
-      classType: Laser, // This is the class we create just below
-      active: false,
-      visible: false,
-      key: 'laser-shot'
+      sceneEvents.emit(events.laserFireLeft, timestamp + LaserGroup.LASER_COOL_DOWN);
+      sceneEvents.emit(events.laserFireRight, timestamp + LaserGroup.LASER_COOL_DOWN);
     });
   }
 
@@ -49,14 +42,14 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
     if (timestamp - this.leftLastFire > LaserGroup.LASER_COOL_DOWN) {
       this.leftLastFire = timestamp;
       laserToShoot = LaserToShoot.LEFT;
-      sceneEvents.emit('laser-fire-left', timestamp + LaserGroup.LASER_COOL_DOWN);
+      sceneEvents.emit(events.laserFireLeft, timestamp + LaserGroup.LASER_COOL_DOWN);
       if (timestamp - this.rightLastFire > LaserGroup.LASER_COOL_DOWN) {
-        sceneEvents.emit('laser-fire-right', timestamp + this.shootingCoolDown);
+        sceneEvents.emit(events.laserFireRight, timestamp + this.shootingCoolDown);
       }
     } else if (timestamp - this.rightLastFire > LaserGroup.LASER_COOL_DOWN) {
       this.rightLastFire = timestamp;
       laserToShoot = LaserToShoot.RIGHT;
-      sceneEvents.emit('laser-fire-right', timestamp + LaserGroup.LASER_COOL_DOWN);
+      sceneEvents.emit(events.laserFireRight, timestamp + LaserGroup.LASER_COOL_DOWN);
     }
     if (laserToShoot === LaserToShoot.NONE) {
       return;
@@ -66,27 +59,15 @@ class LaserGroup extends Phaser.Physics.Arcade.Group {
       laserToShoot === LaserToShoot.RIGHT
         ? this.rightLaser.clone().rotate(rotation)
         : this.leftLaser.clone().rotate(rotation);
-    // Get the first available sprite in the group
-    const laser = this.getFirstDead(true);
-    if (laser) {
-      laser.fire(x + laserPosition.x, y + laserPosition.y, velocity);
-    }
-  }
-}
 
-class Laser extends Phaser.Physics.Arcade.Sprite {
-  constructor(scene: Phaser.Scene, x: number, y: number) {
-    super(scene, x, y, 'laser-shot');
-  }
-
-  fire(x: number, y: number, velocity: Vector2) {
-    this.body.reset(x, y);
-
-    this.setActive(true);
-    this.setVisible(true);
-    this.setRotation(velocity.angle() + Math.PI / 2);
-
-    this.setVelocity(velocity.x, velocity.y);
+    const laser = this.gameScene.matter.add.image(x + laserPosition.x, y + laserPosition.y, 'laser-shot', undefined, {
+      friction: 0,
+      frictionStatic: 0,
+      frictionAir: 0,
+      label: bodyLabels.ownLaserShot
+    });
+    laser.setRotation(velocity.angle() + Math.PI / 2);
+    laser.setVelocity(velocity.x, velocity.y);
   }
 }
 

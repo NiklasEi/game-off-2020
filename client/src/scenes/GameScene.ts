@@ -9,7 +9,7 @@ import {
   PlayerType,
   SetMapPayload
 } from '../networking/MultiplayerEvent';
-import { tileSize } from '../utils/constants';
+import { bodyLabels, events, tileSize } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
 import LaserGroup from '../laser/Laser';
 import { sceneEvents } from '../events/EventCenter';
@@ -37,21 +37,10 @@ export class GameScene extends Phaser.Scene {
   private playerType?: PlayerType;
   private laserGroup?: LaserGroup;
   private multiPlayerStarted: boolean = false;
+  matterCollision: any;
 
   constructor() {
-    super({
-      key: 'game',
-      physics: {
-        arcade: {
-          debug: false,
-          gravity: { y: 0 }
-        },
-        matter: {
-          debug: true,
-          gravity: false
-        }
-      }
-    });
+    super('game');
   }
 
   public preload() {
@@ -70,7 +59,7 @@ export class GameScene extends Phaser.Scene {
 
   public async create() {
     sceneEvents.once(
-      'start-game',
+      events.startGame,
       () => {
         this.multiPlayerStarted = true;
       },
@@ -102,12 +91,22 @@ export class GameScene extends Phaser.Scene {
     const spaceShipShape = this.cache.json.get('spaceship-shape');
     const playerSpaceShipKey = this.getPlayerImageKeyFromType(this.playerType);
     this.spaceShip = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
-      vertices: spaceShipShape.spaceship,
+      vertices: spaceShipShape,
       friction: 0,
       frictionStatic: 0,
-      frictionAir: 0
+      frictionAir: 0,
+      label: bodyLabels.ownSpaceship
     });
-    this.matter.world.setBounds(5 * tileSize, 5 * tileSize, 197 * tileSize, 197 * tileSize);
+    const bounds = this.matter.world.setBounds(5 * tileSize, 5 * tileSize, 197 * tileSize, 197 * tileSize);
+    this.matterCollision.addOnCollideStart({
+      objectA: Object.values(bounds.walls),
+      callback: (eventData: any) => {
+        const { bodyB, gameObjectB } = eventData;
+        if (bodyB.label === bodyLabels.ownLaserShot) {
+          gameObjectB?.destroy();
+        }
+      }
+    });
     this.cameras.main.startFollow(this.spaceShip, true);
     this.cameras.main.zoom = 0.5;
 
@@ -133,7 +132,7 @@ export class GameScene extends Phaser.Scene {
     if (cursors === undefined) return;
 
     const timeStamp = Date.now().valueOf();
-    sceneEvents.emit('new-frame', timeStamp);
+    sceneEvents.emit(events.newFrameTimestamp, timeStamp);
 
     const speedUpperThreshold = 10;
     const speedDelta = 0.1;
@@ -227,10 +226,11 @@ export class GameScene extends Phaser.Scene {
     const spaceShipShape = this.cache.json.get('spaceship-shape');
     const playerSpaceShipKey = this.getPlayerImageKeyFromType(payload.playerType);
     const player = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
-      vertices: spaceShipShape.spaceship,
+      vertices: spaceShipShape,
       friction: 0,
       frictionStatic: 0,
-      frictionAir: 0
+      frictionAir: 0,
+      label: bodyLabels.otherSpaceship
     });
     player.name = payload.playerId;
     this.players.push(player);
@@ -260,8 +260,8 @@ export class GameScene extends Phaser.Scene {
 
   shootLaser() {
     if (this.laserGroup) {
-      const velocity = new Vector2(900, 0).rotate(this.spaceShip.rotation);
-      this.laserGroup.fireLaser(this.spaceShip.x, this.spaceShip.y - 20, velocity);
+      const velocity = new Vector2(15, 0).rotate(this.spaceShip.rotation);
+      this.laserGroup.fireLaser(this.spaceShip.x, this.spaceShip.y, velocity);
     }
   }
 

@@ -12,6 +12,7 @@ import {
   SignedGameStatePayload
 } from '../networking/MultiplayerEvent';
 import { sceneEvents } from '../events/EventCenter';
+import { events } from '../utils/constants';
 
 declare const SERVER_HOST: string;
 
@@ -30,7 +31,7 @@ export class Session {
 
   constructor() {
     this.establishMultiPlayerSession();
-    sceneEvents.once('start-game', this.sendStartGame, this);
+    sceneEvents.once(events.startGame, this.sendStartGame, this);
   }
 
   public connect(gameCode: string) {
@@ -61,7 +62,7 @@ export class Session {
       // eslint-disable-next-line no-console
       console.log('Connected to Server');
       this.connected = true;
-      sceneEvents.emit('server-connected');
+      sceneEvents.emit(events.serverConnected);
     };
 
     this.socket.onmessage = (ev) => {
@@ -149,7 +150,7 @@ export class Session {
         const state = payload as RoomLeaderPayload;
         this.secret = state.secret;
         this.isRoomLeader = true;
-        sceneEvents.emit('is-room-leader');
+        sceneEvents.emit(events.playerIsRoomLeader);
         break;
       }
       case MultiplayerEvent.PLAYER_JOINED_GAME: {
@@ -183,17 +184,17 @@ export class Session {
         break;
       }
       case MultiplayerEvent.START_GAME: {
-        sceneEvents.emit('start-game');
+        sceneEvents.emit(events.startGame);
         break;
       }
       case MultiplayerEvent.JOIN_GAME: {
         const answer = payload as JoinGameAnswerPayload;
-        sceneEvents.emit('join-game', answer);
+        sceneEvents.emit(events.joinGame, answer);
         break;
       }
       case MultiplayerEvent.PING: {
         const state = payload as { timestamp: number };
-        sceneEvents.emit('update-ping', Date.now().valueOf() - state.timestamp);
+        sceneEvents.emit(events.updatePing, Date.now().valueOf() - state.timestamp);
         break;
       }
 

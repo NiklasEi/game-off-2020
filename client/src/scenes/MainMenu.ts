@@ -3,6 +3,7 @@ import { GameMode } from '../session/GameMode';
 import { Session } from '../session/Session';
 import { sceneEvents } from '../events/EventCenter';
 import { PlayerType } from '../networking/MultiplayerEvent';
+import { events } from '../utils/constants';
 
 export default class MainMenu extends Phaser.Scene {
   private singlePlayButton!: Phaser.GameObjects.Image;
@@ -48,7 +49,7 @@ export default class MainMenu extends Phaser.Scene {
           this.session?.connect(code);
 
           sceneEvents.once(
-            'join-game',
+            events.joinGame,
             ({ ok, reason, playerType }: { ok: boolean; reason?: string; playerType?: PlayerType }) => {
               if (ok) {
                 this.scene.start('game', { mode: GameMode.MULTI_PLAYER, session: this.session, playerType });
@@ -73,7 +74,7 @@ export default class MainMenu extends Phaser.Scene {
     if (this.session?.connected) {
       enableMultiPlayer();
     } else {
-      sceneEvents.once('server-connected', enableMultiPlayer);
+      sceneEvents.once(events.serverConnected, enableMultiPlayer);
     }
   }
 
