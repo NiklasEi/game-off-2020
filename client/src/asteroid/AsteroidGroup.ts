@@ -29,7 +29,6 @@ class AsteroidGroup {
         });
         asteroid.name = toAdd.name;
 
-        asteroid.scale = 2;
         asteroid.setRotation(toAdd.rotation);
         asteroid.setAngularVelocity(toAdd.angularVelocity);
         asteroid.setVelocity(toAdd.velocity.x, toAdd.velocity.y);
@@ -95,7 +94,6 @@ class AsteroidGroup {
     const name = `${Date.now().valueOf()}`;
     asteroid.name = name;
 
-    asteroid.scale = 2;
     const angularVelocity = Math.random() * (Math.random() - 0.5);
     asteroid.setAngularVelocity(angularVelocity);
     asteroid.setVelocity(velocity.x, velocity.y);

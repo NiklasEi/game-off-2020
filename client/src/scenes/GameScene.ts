@@ -41,6 +41,9 @@ export class GameScene extends Phaser.Scene {
   public gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private code?: string;
   private playerType?: PlayerType;
+  public dead: boolean = false;
+  public deadSince: number = Date.now().valueOf();
+  public deadUntil: number = Date.now().valueOf();
   private spawn: Position = {
     x: 7 * tileSize,
     y: 7 * tileSize
@@ -126,9 +129,12 @@ export class GameScene extends Phaser.Scene {
         const { bodyB, gameObjectB } = eventData;
         if (bodyB.label === bodyLabels.asteroid) {
           gameObjectB?.destroy();
+          if (this.dead) return;
           this.health -= 100;
           if (this.health <= 0) {
-            console.log('you dead...');
+            const timestamp = Date.now().valueOf();
+            sceneEvents.emit(events.playerDied, timestamp, timestamp + 10000);
+            this.dead = true;
           } else {
             sceneEvents.emit(events.updateHealth, this.maxHealth, this.health);
           }
@@ -162,6 +168,24 @@ export class GameScene extends Phaser.Scene {
     //  Input Events
     this.cursors = this.input.keyboard.createCursorKeys();
 
+    sceneEvents.on(
+      events.playerDied,
+      () => {
+        this.spaceShip.setRotation(0);
+        this.spaceShip.setAngularVelocity(0);
+        this.spaceShip.setVelocity(0, 0);
+        this.spaceShip.x = this.spawn.x;
+        this.spaceShip.y = this.spawn.y;
+      },
+      this
+    );
+    sceneEvents.on(
+      events.playerRespawn,
+      () => {
+        this.dead = false;
+      },
+      this
+    );
     if (this.gameMode === GameMode.SINGLE_PLAYER) {
       console.log('Single player is not yet fully supported');
     } else {
@@ -189,6 +213,10 @@ export class GameScene extends Phaser.Scene {
     if (cursors === undefined) return;
 
     sceneEvents.emit(events.newFrameTimestamp, timeStamp);
+
+    if (this.dead) {
+      return;
+    }
 
     const speedUpperThreshold = 10;
     const speedDelta = 0.1;

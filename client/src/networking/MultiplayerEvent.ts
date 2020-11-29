@@ -93,6 +93,7 @@ export interface Entity {
   velocity: Velocity;
   rotation: number;
   angularVelocity: number;
+  dead?: boolean;
 }
 
 export type Velocity = Position;

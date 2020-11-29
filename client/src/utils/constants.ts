@@ -18,7 +18,9 @@ export const events = {
   playerIsRoomLeader: 'is-room-leader',
   newFrameTimestamp: 'new-frame',
   updateHealth: 'update-health',
-  spawnAsteroid: 'spawn-asteroid'
+  spawnAsteroid: 'spawn-asteroid',
+  playerDied: 'player-died',
+  playerRespawn: 'player-respawn'
 };
 
 export const assetKeys = {

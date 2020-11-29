@@ -25,6 +25,9 @@ export default class GameHud extends Phaser.Scene {
   private greyHealthBar!: Phaser.GameObjects.Image;
   private redHealthBar!: Phaser.GameObjects.Image;
   private gameStarted: boolean = false;
+  private dead: boolean = false;
+  private deadSince: number = 0;
+  private deadUntil: number = 0;
 
   constructor() {
     super(scenes.gameHud);
@@ -42,12 +45,20 @@ export default class GameHud extends Phaser.Scene {
 
   public updateHealth(maxHealth: number, currentHealth: number) {
     if (currentHealth <= 0) {
-      this.redHealthBar.alpha = 0;
+      this.redHealthBar.scaleX = 0;
       return;
     }
     const scale = (currentHealth / maxHealth) * this.healthBarScale;
     this.redHealthBar.x = this.redHealthBar.x - 100 * (1 - currentHealth / maxHealth);
     this.redHealthBar.scaleX = scale;
+  }
+
+  private playerDied(deadSince: number, deadUntil: number) {
+    console.log(`dead: ${deadSince} -> ${deadUntil}`);
+    this.deadSince = deadSince;
+    this.deadUntil = deadUntil;
+    this.dead = true;
+    this.redHealthBar.scaleX = 0;
   }
 
   public updateFps(timestamp: number) {
@@ -85,30 +96,42 @@ export default class GameHud extends Phaser.Scene {
   }
 
   update() {
-    if (this.coolDownRight === undefined && this.coolDownLeft === undefined) {
-      return;
-    }
     const timestamp = Date.now().valueOf();
-    if (this.coolDownLeft !== undefined) {
-      const diff = this.coolDownLeft - timestamp;
-      if (diff < 1) {
-        this.coolDownLeft = undefined;
-        this.leftLaserCharging.clearTint();
-        this.leftLaserCharging.setAlpha(1);
-      } else {
-        this.leftLaserCharging.setTint(0x808080);
-        this.leftLaserCharging.setAlpha(1 - (diff / LaserGroup.LASER_COOL_DOWN) * 0.7);
+    if (this.coolDownRight !== undefined || this.coolDownLeft !== undefined) {
+      if (this.coolDownLeft !== undefined) {
+        const diff = this.coolDownLeft - timestamp;
+        if (diff < 1) {
+          this.coolDownLeft = undefined;
+          this.leftLaserCharging.clearTint();
+          this.leftLaserCharging.setAlpha(1);
+        } else {
+          this.leftLaserCharging.setTint(0x808080);
+          this.leftLaserCharging.setAlpha(1 - (diff / LaserGroup.LASER_COOL_DOWN) * 0.7);
+        }
+      }
+      if (this.coolDownRight !== undefined) {
+        const diff = this.coolDownRight - timestamp;
+        if (diff < 1) {
+          this.coolDownRight = undefined;
+          this.rightLaserCharging.clearTint();
+          this.rightLaserCharging.setAlpha(1);
+        } else {
+          this.rightLaserCharging.setTint(0x808080);
+          this.rightLaserCharging.setAlpha(1 - (diff / LaserGroup.LASER_COOL_DOWN) * 0.7);
+        }
       }
     }
-    if (this.coolDownRight !== undefined) {
-      const diff = this.coolDownRight - timestamp;
-      if (diff < 1) {
-        this.coolDownRight = undefined;
-        this.rightLaserCharging.clearTint();
-        this.rightLaserCharging.setAlpha(1);
+
+    if (this.dead) {
+      if (timestamp >= this.deadUntil) {
+        sceneEvents.emit(events.playerRespawn);
+        this.dead = false;
       } else {
-        this.rightLaserCharging.setTint(0x808080);
-        this.rightLaserCharging.setAlpha(1 - (diff / LaserGroup.LASER_COOL_DOWN) * 0.7);
+        const diff = this.deadUntil - timestamp;
+        const totalDiff = this.deadUntil - this.deadSince;
+
+        this.redHealthBar.scaleX = 2 * (1 - diff / totalDiff);
+        // this.redHealthBar.x = this.redHealthBar.x - 100 * (1 - diff/totalDiff);
       }
     }
   }
@@ -130,6 +153,7 @@ export default class GameHud extends Phaser.Scene {
     this.redHealthBar.scaleX = this.healthBarScale;
     this.redHealthBar.scaleY = 0.5;
     sceneEvents.on(events.updateHealth, this.updateHealth, this);
+    sceneEvents.on(events.playerDied, this.playerDied, this);
 
     sceneEvents.on(
       events.playerIsRoomLeader,
