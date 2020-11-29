@@ -2,7 +2,8 @@ import { GameScene } from '../scenes/GameScene';
 import {
   GameStatePayload,
   JoinGameAnswerPayload,
-  MultiplayerEvent, NamedEntity,
+  MultiplayerEvent,
+  NamedEntity,
   PlayerJoinedGamePayload,
   PlayerLeftGamePayload,
   PlayerStateInboundPayload,
@@ -59,9 +60,11 @@ export class Session {
   }
 
   private addAsteroid(toAdd: NamedEntity) {
-    this.sendGameStateEvent({asteroids: {
-      add: [toAdd]
-      }})
+    this.sendGameStateEvent({
+      asteroids: {
+        add: [toAdd]
+      }
+    });
   }
 
   private setEvents() {

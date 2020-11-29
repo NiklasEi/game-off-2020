@@ -1,8 +1,8 @@
-import {GameScene} from '../scenes/GameScene';
-import {bodyLabels, events, tileSize} from '../utils/constants';
-import {NamedEntity, Position, Velocity} from '../networking/MultiplayerEvent';
-import {sceneEvents} from "../events/EventCenter";
-import {GameMode} from "../session/GameMode";
+import { GameScene } from '../scenes/GameScene';
+import { bodyLabels, events, tileSize } from '../utils/constants';
+import { NamedEntity, Position, Velocity } from '../networking/MultiplayerEvent';
+import { sceneEvents } from '../events/EventCenter';
+import { GameMode } from '../session/GameMode';
 
 class AsteroidGroup {
   private readonly gameScene: GameScene;
@@ -12,18 +12,15 @@ class AsteroidGroup {
     this.gameScene = gameScene;
   }
 
-  update(asteroids: {
-    remove?: string[],
-    add?: NamedEntity[]
-  }) {
+  update(asteroids: { remove?: string[]; add?: NamedEntity[] }) {
     if (asteroids.remove !== undefined) {
-      for (let name of asteroids.remove) {
+      for (const name of asteroids.remove) {
         const toRemove = this.asteroids.find((asteroid: Phaser.Physics.Matter.Image) => asteroid.name === name);
         toRemove?.destroy();
       }
     }
     if (asteroids.add !== undefined) {
-      for (let toAdd of asteroids.add) {
+      for (const toAdd of asteroids.add) {
         const asteroid = this.gameScene.matter.add.image(toAdd.position.x, toAdd.position.y, 'asteroid-1', undefined, {
           friction: 0,
           frictionStatic: 0,
@@ -33,7 +30,7 @@ class AsteroidGroup {
         asteroid.name = toAdd.name;
 
         asteroid.scale = 2;
-        asteroid.setRotation(toAdd.rotation)
+        asteroid.setRotation(toAdd.rotation);
         asteroid.setAngularVelocity(toAdd.angularVelocity);
         asteroid.setVelocity(toAdd.velocity.x, toAdd.velocity.y);
         this.asteroids.push(asteroid);
@@ -87,7 +84,7 @@ class AsteroidGroup {
       };
     }
 
-    //console.log(`firing asteroid: speed (${velocity.x},${velocity.y}), position: (${spawn.x},${spawn.y})`);
+    // console.log(`firing asteroid: speed (${velocity.x},${velocity.y}), position: (${spawn.x},${spawn.y})`);
 
     const asteroid = this.gameScene.matter.add.image(spawn.x, spawn.y, 'asteroid-1', undefined, {
       friction: 0,
@@ -95,7 +92,7 @@ class AsteroidGroup {
       frictionAir: 0,
       label: bodyLabels.asteroid
     });
-    const name = `${Date.now().valueOf()}`
+    const name = `${Date.now().valueOf()}`;
     asteroid.name = name;
 
     asteroid.scale = 2;
@@ -109,8 +106,8 @@ class AsteroidGroup {
         velocity,
         rotation: 0,
         angularVelocity
-      }
-      sceneEvents.emit(events.spawnAsteroid, namedEntity)
+      };
+      sceneEvents.emit(events.spawnAsteroid, namedEntity);
     }
   }
 }

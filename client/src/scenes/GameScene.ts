@@ -26,7 +26,7 @@ interface Control {
 
 export class GameScene extends Phaser.Scene {
   public static UPPER_WORLD_BOUND: number = 5;
-  public static LOWER_WORLD_BOUND: number = 197;
+  public static LOWER_WORLD_BOUND: number = 90;
   private spaceShip!: Phaser.Physics.Matter.Image;
   private spaceShipEmitterLeft!: Phaser.GameObjects.Particles.ParticleEmitter;
   private spaceShipEmitterRight!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -134,7 +134,7 @@ export class GameScene extends Phaser.Scene {
           }
         }
         if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
-          gameObjectB?.destroy()
+          gameObjectB?.destroy();
         }
       }
     });
@@ -295,8 +295,12 @@ export class GameScene extends Phaser.Scene {
       objectA: player,
       callback: (eventData: any) => {
         const { bodyB, gameObjectB } = eventData;
-        if (bodyB.label === bodyLabels.asteroid || bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
-          gameObjectB?.destroy()
+        if (
+          bodyB.label === bodyLabels.asteroid ||
+          bodyB.label === bodyLabels.ownLaserShot ||
+          bodyB.label === bodyLabels.otherLaserShot
+        ) {
+          gameObjectB?.destroy();
         }
       }
     });

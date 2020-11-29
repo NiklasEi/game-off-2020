@@ -125,8 +125,10 @@ export default class GameHud extends Phaser.Scene {
 
     this.greyHealthBar = this.add.image(this.game.renderer.width / 2, 40, assetKeys.hud.grayBar);
     this.greyHealthBar.scaleX = this.healthBarScale;
+    this.greyHealthBar.scaleY = 0.5;
     this.redHealthBar = this.add.image(this.game.renderer.width / 2, 40, assetKeys.hud.redBar);
     this.redHealthBar.scaleX = this.healthBarScale;
+    this.redHealthBar.scaleY = 0.5;
     sceneEvents.on(events.updateHealth, this.updateHealth, this);
 
     sceneEvents.on(

@@ -5,10 +5,11 @@ use rand::{random, thread_rng, Rng};
 
 impl GameMap {
     const PLANET_RADIUS: usize = 125;
-    const DISTANCE_BETWEEN_PLANETS: usize = 2000;
-    const NUMBER_OF_PLANETS: usize = 50;
+    const DISTANCE_BETWEEN_PLANETS: usize = 1000;
+    const NUMBER_OF_PLANETS: usize = 25;
     const MAP_TILE_SIZE: usize = 256;
-    const MAP_NUMBER_OF_TILES: usize = 200;
+    const MAP_NUMBER_OF_TILES: usize = 100;
+    const OUTER_BOUNDS: usize = 10 * Self::MAP_TILE_SIZE;
     const MAP_SIZE: usize = Self::MAP_TILE_SIZE * Self::MAP_NUMBER_OF_TILES;
     pub fn create_random() -> Self {
         GameMap {
@@ -124,14 +125,18 @@ mod test {
         let planets: Vec<Planet> = vec![
             Planet {
                 planet_type: PlanetType::EARTH,
-                position: Coordinates { x: 150, y: 150 },
+                position: Coordinates {
+                    x: super::GameMap::OUTER_BOUNDS,
+                    y: super::GameMap::OUTER_BOUNDS,
+                },
                 radius: super::GameMap::PLANET_RADIUS,
             },
             Planet {
                 planet_type: PlanetType::EARTH,
                 position: Coordinates {
-                    x: 150,
-                    y: 140 + 2 * super::GameMap::DISTANCE_BETWEEN_PLANETS,
+                    x: super::GameMap::OUTER_BOUNDS,
+                    y: super::GameMap::OUTER_BOUNDS - 2
+                        + 2 * super::GameMap::DISTANCE_BETWEEN_PLANETS,
                 },
                 radius: super::GameMap::PLANET_RADIUS,
             },
@@ -139,8 +144,20 @@ mod test {
         assert_eq!(
             super::GameMap::does_fit_with_planets(
                 &planets,
-                150,
-                150 + super::GameMap::DISTANCE_BETWEEN_PLANETS
+                super::GameMap::OUTER_BOUNDS,
+                super::GameMap::OUTER_BOUNDS + super::GameMap::DISTANCE_BETWEEN_PLANETS
+            ),
+            false
+        );
+    }
+
+    #[test]
+    fn does_not_place_planets_in_outer_bounds() {
+        assert_eq!(
+            super::GameMap::does_fit_with_planets(
+                vec![]::<>,
+                super::GameMap::OUTER_BOUNDS,
+                super::GameMap::OUTER_BOUNDS + super::GameMap::DISTANCE_BETWEEN_PLANETS
             ),
             false
         );

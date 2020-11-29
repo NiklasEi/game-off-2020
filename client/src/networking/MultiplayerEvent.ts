@@ -23,9 +23,9 @@ export interface SignedGameStatePayload extends GameStatePayload {
 
 export interface GameStatePayload {
   otherLaserShots?: Entity[];
-  asteroids: {
-    remove?: string[],
-    add?: NamedEntity[]
+  asteroids?: {
+    remove?: string[];
+    add?: NamedEntity[];
   };
 }
 
