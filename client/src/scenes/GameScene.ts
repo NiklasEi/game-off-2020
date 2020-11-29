@@ -171,6 +171,7 @@ export class GameScene extends Phaser.Scene {
     sceneEvents.on(
       events.playerDied,
       () => {
+        this.spaceShip.setTint(0x808080);
         this.spaceShip.setRotation(0);
         this.spaceShip.setAngularVelocity(0);
         this.spaceShip.setVelocity(0, 0);
@@ -182,6 +183,7 @@ export class GameScene extends Phaser.Scene {
     sceneEvents.on(
       events.playerRespawn,
       () => {
+        this.spaceShip.clearTint();
         this.dead = false;
       },
       this
