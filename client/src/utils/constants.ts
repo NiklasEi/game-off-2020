@@ -4,6 +4,7 @@ export const bodyLabels = {
   ownSpaceship: 'own-spaceship',
   otherSpaceship: 'other-spaceship',
   ownLaserShot: 'own-laser-shot',
+  otherLaserShot: 'other-laser-shot',
   asteroid: 'asteroid'
 };
 
@@ -16,8 +17,8 @@ export const events = {
   serverConnected: 'server-connected',
   playerIsRoomLeader: 'is-room-leader',
   newFrameTimestamp: 'new-frame',
-  shootAsteroids: 'shoot-asteroids',
-  updateHealth: 'update-health'
+  updateHealth: 'update-health',
+  spawnAsteroid: 'spawn-asteroid'
 };
 
 export const assetKeys = {
@@ -30,6 +31,9 @@ export const assetKeys = {
   },
   ship: {
     yellow: 'spaceship-yellow',
+    blue: 'spaceship-blue',
+    green: 'spaceship-green',
+    red: 'spaceship-red',
     shape: 'spaceship-shape',
     fire: 'fire',
     laserShot: 'laser-shot'
