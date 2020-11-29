@@ -75,7 +75,7 @@ class LaserGroup {
         label: bodyLabels.ownLaserShot
       }
     );
-    laser.setRotation(velocity.angle() + Math.PI / 2);
+    laser.setRotation(velocity.angle());
     laser.setVelocity(velocity.x, velocity.y);
   }
 }
