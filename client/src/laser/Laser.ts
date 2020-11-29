@@ -1,8 +1,9 @@
 import * as Phaser from 'phaser';
-import Vector2 = Phaser.Math.Vector2;
 import { sceneEvents } from '../events/EventCenter';
 import { GameScene } from '../scenes/GameScene';
 import { assetKeys, bodyLabels, events } from '../utils/constants';
+import { GameMode } from '../session/GameMode';
+import Vector2 = Phaser.Math.Vector2;
 
 enum LaserToShoot {
   LEFT,
@@ -11,13 +12,14 @@ enum LaserToShoot {
 }
 
 class LaserGroup {
-  public static readonly LASER_COOL_DOWN = 2000;
+  public static readonly LASER_COOL_DOWN = 8000;
   private readonly shootingCoolDown = 500;
   private leftLastFire = Date.now().valueOf();
   private rightLastFire = Date.now().valueOf();
   private readonly leftLaser = new Vector2(80, -27);
   private readonly rightLaser = new Vector2(80, 26);
   private readonly gameScene: GameScene;
+  private readonly ownLaserShots: Phaser.Physics.Matter.Image[] = [];
 
   constructor(gameScene: GameScene) {
     this.gameScene = gameScene;
@@ -77,6 +79,10 @@ class LaserGroup {
     );
     laser.setRotation(velocity.angle());
     laser.setVelocity(velocity.x, velocity.y);
+    if (this.gameScene.gameMode === GameMode.MULTI_PLAYER) {
+      laser.name = `${bodyLabels.ownLaserShot}-${timestamp}`;
+      this.ownLaserShots.push(laser);
+    }
   }
 }
 

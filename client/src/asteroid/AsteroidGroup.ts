@@ -98,6 +98,7 @@ class AsteroidGroup {
     asteroid.setAngularVelocity(angularVelocity);
     asteroid.setVelocity(velocity.x, velocity.y);
     if (this.gameScene.gameMode === GameMode.MULTI_PLAYER) {
+      this.asteroids.push(asteroid);
       const namedEntity: NamedEntity = {
         name,
         position: spawn,

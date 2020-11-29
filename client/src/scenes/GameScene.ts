@@ -15,6 +15,7 @@ import { GameMode } from '../session/GameMode';
 import { sceneEvents } from '../events/EventCenter';
 import AsteroidGroup from '../asteroid/AsteroidGroup';
 import LaserGroup from '../laser/Laser';
+import { generateSinglePlayerMap } from '../utils/generateSinglePlayerMap';
 import Vector2 = Phaser.Math.Vector2;
 
 interface Control {
@@ -28,6 +29,9 @@ export class GameScene extends Phaser.Scene {
   public static UPPER_WORLD_BOUND: number = 5;
   public static LOWER_WORLD_BOUND: number = 95;
   private spaceShip!: Phaser.Physics.Matter.Image;
+  private enemyPlanetCover!: Phaser.GameObjects.Image;
+  private readonly enemyMaxHealth: number = 100;
+  private enemyHealth: number = this.enemyMaxHealth;
   private spaceShipEmitterLeft!: Phaser.GameObjects.Particles.ParticleEmitter;
   private spaceShipEmitterRight!: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly leftEngine = new Vector2(-52, -28);
@@ -42,8 +46,7 @@ export class GameScene extends Phaser.Scene {
   private code?: string;
   private playerType?: PlayerType;
   public dead: boolean = false;
-  public deadSince: number = Date.now().valueOf();
-  public deadUntil: number = Date.now().valueOf();
+  public won: boolean = false;
   private spawn: Position = {
     x: 7 * tileSize,
     y: 7 * tileSize
@@ -131,15 +134,7 @@ export class GameScene extends Phaser.Scene {
         const { bodyB, gameObjectB } = eventData;
         if (bodyB.label === bodyLabels.asteroid) {
           gameObjectB?.destroy();
-          if (this.dead) return;
-          this.health -= 40;
-          if (this.health <= 0) {
-            const timestamp = Date.now().valueOf();
-            sceneEvents.emit(events.playerDied, timestamp, timestamp + 10000);
-            this.dead = true;
-          } else {
-            sceneEvents.emit(events.updateHealth, this.maxHealth, this.health);
-          }
+          this.reducePlayerHealth(40);
         }
         if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
           gameObjectB?.destroy();
@@ -173,14 +168,10 @@ export class GameScene extends Phaser.Scene {
     sceneEvents.on(
       events.playerDied,
       () => {
-        this.spaceShipEmitterRight.on = false;
-        this.spaceShipEmitterLeft.on = false;
-        this.spaceShip.setTint(0x808080);
-        this.spaceShip.setRotation(0);
-        this.spaceShip.setAngularVelocity(0);
-        this.spaceShip.setVelocity(0, 0);
         this.spaceShip.x = this.spawn.x;
         this.spaceShip.y = this.spawn.y;
+        this.spaceShip.setRotation(0);
+        this.freezeSpaceship();
       },
       this
     );
@@ -194,7 +185,7 @@ export class GameScene extends Phaser.Scene {
       this
     );
     if (this.gameMode === GameMode.SINGLE_PLAYER) {
-      console.log('Single player is not yet fully supported');
+      this.setMap(generateSinglePlayerMap());
     } else {
       if (this.session === undefined) {
         console.error('No session for multi player game!');
@@ -222,11 +213,13 @@ export class GameScene extends Phaser.Scene {
     sceneEvents.emit(events.newFrameTimestamp, timeStamp);
 
     if (this.dead) {
-      this.spaceShip.setRotation(0);
       this.spaceShip.setAngularVelocity(0);
       this.spaceShip.setVelocity(0, 0);
-      this.spaceShip.x = this.spawn.x;
-      this.spaceShip.y = this.spawn.y;
+      if (this.gameMode === GameMode.MULTI_PLAYER) {
+        this.spaceShip.x = this.spawn.x;
+        this.spaceShip.y = this.spawn.y;
+        this.spaceShip.setRotation(0);
+      }
       return;
     }
 
@@ -386,7 +379,9 @@ export class GameScene extends Phaser.Scene {
     const planets: any[] = [];
     payload.planets.forEach((planetData) => {
       const key = this.getPlanetImageKeyFromType(planetData.planetType);
-      const planet = this.matter.add.image(planetData.position.x, planetData.position.y, key);
+      const planet = this.matter.add.image(planetData.position.x, planetData.position.y, key, undefined, {
+        label: bodyLabels.planet
+      });
       planet.setCircle(planetData.radius);
       planet.setStatic(true);
       planets.push(planet);
@@ -394,18 +389,61 @@ export class GameScene extends Phaser.Scene {
     const enemyPlanet = this.matter.add.image(
       payload.enemyPlanet.position.x,
       payload.enemyPlanet.position.y,
+      this.getPlanetImageKeyFromType(payload.enemyPlanet.planetType),
+      undefined,
+      {
+        label: bodyLabels.evilPlanet
+      }
+    );
+    this.enemyPlanetCover = this.add.image(
+      payload.enemyPlanet.position.x,
+      payload.enemyPlanet.position.y,
       this.getPlanetImageKeyFromType(payload.enemyPlanet.planetType)
     );
-    enemyPlanet.setCircle(payload.enemyPlanet.radius + 10);
+    this.enemyPlanetCover.setTintFill(0x000000);
+    this.enemyPlanetCover.setAlpha(0.5);
+    enemyPlanet.setCircle(payload.enemyPlanet.radius);
     enemyPlanet.setStatic(true);
-    planets.push(enemyPlanet);
+    this.matterCollision.addOnCollideStart({
+      objectA: enemyPlanet,
+      callback: (eventData: any) => {
+        const { gameObjectA, bodyB, gameObjectB } = eventData;
+        if (bodyB.label === bodyLabels.asteroid) {
+          gameObjectB?.destroy();
+        }
+        if (bodyB.label === bodyLabels.ownLaserShot) {
+          gameObjectB?.destroy();
+          this.enemyHealth -= 40;
+          if (this.enemyHealth <= 0) {
+            console.log('You won!');
+            this.won = true;
+            if (this.gameMode === GameMode.MULTI_PLAYER) {
+              // ToDo
+            } else {
+              sceneEvents.emit(events.playerWonInSinglePlayer);
+            }
+            this.enemyPlanetCover.setAlpha(0);
+          } else {
+            this.enemyPlanetCover.scale = this.enemyHealth / this.enemyMaxHealth;
+          }
+        }
+        if (bodyB.label === bodyLabels.ownSpaceship) {
+          const direction = new Vector2(this.spaceShip.x - gameObjectA.x, this.spaceShip.y - gameObjectA.y);
+          this.collideShipWithPlanet(direction);
+        }
+      }
+    });
 
     this.matterCollision.addOnCollideStart({
       objectA: planets,
       callback: (eventData: any) => {
-        const { bodyB, gameObjectB } = eventData;
+        const { gameObjectA, bodyB, gameObjectB } = eventData;
         if (bodyB.label === bodyLabels.asteroid || bodyB.label === bodyLabels.ownLaserShot) {
           gameObjectB?.destroy();
+        }
+        if (bodyB.label === bodyLabels.ownSpaceship) {
+          const direction = new Vector2(this.spaceShip.x - gameObjectA.x, this.spaceShip.y - gameObjectA.y);
+          this.collideShipWithPlanet(direction);
         }
       }
     });
@@ -468,9 +506,42 @@ export class GameScene extends Phaser.Scene {
         return assetKeys.ship.turquoise;
       }
       default: {
-        console.warn(`Unknown player type ${playerType}, falling back to yellow...`);
-        return assetKeys.ship.yellow;
+        return assetKeys.ship.blue;
       }
     }
+  }
+
+  private freezeSpaceship() {
+    this.spaceShipEmitterRight.on = false;
+    this.spaceShipEmitterLeft.on = false;
+    this.spaceShip.setTint(0x808080);
+    this.spaceShip.setAngularVelocity(0);
+    this.spaceShip.setVelocity(0, 0);
+  }
+
+  private reducePlayerHealth(damage: number) {
+    if (this.dead || this.won) return;
+    this.health -= damage;
+    if (this.health <= 0) {
+      const timestamp = Date.now().valueOf();
+      if (this.gameMode === GameMode.MULTI_PLAYER) {
+        sceneEvents.emit(events.playerDied, timestamp, timestamp + 10000);
+      } else {
+        sceneEvents.emit(events.updateHealth, this.maxHealth, 0);
+        sceneEvents.emit(events.playerDiedInSinglePlayer);
+        this.spaceShip.setTint(0x000000);
+        this.freezeSpaceship();
+      }
+      this.dead = true;
+    } else {
+      sceneEvents.emit(events.updateHealth, this.maxHealth, this.health);
+    }
+  }
+
+  private collideShipWithPlanet(direction: Vector2) {
+    this.spaceShip.setVelocity(0, 0);
+    this.spaceShip.setAngularVelocity(0);
+    this.spaceShip.rotation = direction.angle();
+    this.reducePlayerHealth(40);
   }
 }

@@ -5,7 +5,9 @@ export const bodyLabels = {
   otherSpaceship: 'other-spaceship',
   ownLaserShot: 'own-laser-shot',
   otherLaserShot: 'other-laser-shot',
-  asteroid: 'asteroid'
+  asteroid: 'asteroid',
+  planet: 'planet',
+  evilPlanet: 'evil-planet'
 };
 
 export const events = {
@@ -20,6 +22,8 @@ export const events = {
   updateHealth: 'update-health',
   spawnAsteroid: 'spawn-asteroid',
   playerDied: 'player-died',
+  playerDiedInSinglePlayer: 'player-died-single-player',
+  playerWonInSinglePlayer: 'player-won-single-player',
   playerRespawn: 'player-respawn'
 };
 

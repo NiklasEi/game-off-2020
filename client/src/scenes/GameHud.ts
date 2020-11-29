@@ -28,6 +28,10 @@ export default class GameHud extends Phaser.Scene {
   private dead: boolean = false;
   private deadSince: number = 0;
   private deadUntil: number = 0;
+  private lostInSinglePlayer?: Phaser.GameObjects.Text;
+  private lostInSinglePlayerTwo?: Phaser.GameObjects.Text;
+  private wonInSinglePlayer?: Phaser.GameObjects.Text;
+  private wonInSinglePlayerTwo?: Phaser.GameObjects.Text;
 
   constructor() {
     super(scenes.gameHud);
@@ -154,6 +158,23 @@ export default class GameHud extends Phaser.Scene {
     this.redHealthBar.scaleY = 0.5;
     sceneEvents.on(events.updateHealth, this.updateHealth, this);
     sceneEvents.on(events.playerDied, this.playerDied, this);
+
+    sceneEvents.on(
+      events.playerDiedInSinglePlayer,
+      () => {
+        this.lostInSinglePlayer = this.add.text(570, 170, 'You lost :(');
+        this.lostInSinglePlayerTwo = this.add.text(450, 200, 'Refresh the page to try again');
+      },
+      this
+    );
+    sceneEvents.on(
+      events.playerWonInSinglePlayer,
+      () => {
+        this.wonInSinglePlayer = this.add.text(570, 170, 'You won :)');
+        this.wonInSinglePlayerTwo = this.add.text(450, 200, 'Refresh the page and beat them again');
+      },
+      this
+    );
 
     sceneEvents.on(
       events.playerIsRoomLeader,

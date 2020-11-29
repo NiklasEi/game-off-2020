@@ -46,7 +46,7 @@ export interface SetMapPayload {
   enemyPlanet: Planet;
 }
 
-interface Planet {
+export interface Planet {
   position: Position;
   radius: number;
   planetType: PlanetType;

@@ -6,7 +6,7 @@ use rand::{random, thread_rng, Rng};
 impl GameMap {
     const PLANET_RADIUS: usize = 125;
     const DISTANCE_BETWEEN_PLANETS: usize = 1000;
-    const NUMBER_OF_PLANETS: usize = 25;
+    const NUMBER_OF_PLANETS: usize = 50;
     const MAP_TILE_SIZE: usize = 256;
     const MAP_NUMBER_OF_TILES: usize = 100;
     const OUTER_BOUNDS: usize = 10 * Self::MAP_TILE_SIZE;
