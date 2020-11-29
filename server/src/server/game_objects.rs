@@ -7,8 +7,9 @@ use serde::Serialize;
 #[serde(rename_all = "camelCase")]
 pub struct GameMap {
     pub size: Coordinates,
-    pub start_point: Coordinates,
     pub planets: Vec<Planet>,
+    pub player_cap: usize,
+    pub spawns: Vec<Coordinates>,
 }
 
 #[derive(Debug, Serialize)]
@@ -19,7 +20,7 @@ pub struct Planet {
     pub planet_type: PlanetType,
 }
 
-#[derive(Default, Debug, Serialize)]
+#[derive(Default, Debug, Serialize, Clone)]
 pub struct Coordinates {
     pub x: usize,
     pub y: usize,

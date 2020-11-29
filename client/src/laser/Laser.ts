@@ -11,7 +11,7 @@ enum LaserToShoot {
 }
 
 class LaserGroup {
-  public static readonly LASER_COOL_DOWN = 1000;
+  public static readonly LASER_COOL_DOWN = 2000;
   private readonly shootingCoolDown = 500;
   private leftLastFire = Date.now().valueOf();
   private rightLastFire = Date.now().valueOf();
@@ -43,13 +43,16 @@ class LaserGroup {
       this.leftLastFire = timestamp;
       laserToShoot = LaserToShoot.LEFT;
       sceneEvents.emit(events.laserFireLeft, timestamp + LaserGroup.LASER_COOL_DOWN);
-      if (timestamp - this.rightLastFire > LaserGroup.LASER_COOL_DOWN) {
+      if (timestamp - this.rightLastFire > this.shootingCoolDown) {
         sceneEvents.emit(events.laserFireRight, timestamp + this.shootingCoolDown);
       }
     } else if (timestamp - this.rightLastFire > LaserGroup.LASER_COOL_DOWN) {
       this.rightLastFire = timestamp;
       laserToShoot = LaserToShoot.RIGHT;
       sceneEvents.emit(events.laserFireRight, timestamp + LaserGroup.LASER_COOL_DOWN);
+      if (timestamp - this.leftLastFire > this.shootingCoolDown) {
+        sceneEvents.emit(events.laserFireLeft, timestamp + this.shootingCoolDown);
+      }
     }
     if (laserToShoot === LaserToShoot.NONE) {
       return;

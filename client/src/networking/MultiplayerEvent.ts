@@ -7,7 +7,8 @@ export enum MultiplayerEvent {
   SET_MAP = 'SetMap',
   PING = 'Ping',
   JOIN_GAME = 'JoinGame',
-  START_GAME = 'StartGame'
+  START_GAME = 'StartGame',
+  CREATE_GAME = 'CreateGame'
 }
 
 export interface PlayerStateInboundPayload extends PlayerStateOutboundPayload {
@@ -31,11 +32,12 @@ export interface StartGamePayload {
 export interface JoinGameAnswerPayload {
   ok: boolean;
   reason?: string;
-  playerType: PlayerType;
+  code?: string;
+  playerType?: PlayerType;
+  spawn?: Position;
 }
 
 export interface SetMapPayload {
-  startPoint: Position;
   planets: Planet[];
 }
 
@@ -64,6 +66,7 @@ export interface RoomLeaderPayload {
 export interface PlayerJoinedGamePayload {
   playerId: string;
   playerType: PlayerType;
+  spawn: Position;
 }
 
 export interface PlayerLeftGamePayload {
@@ -82,7 +85,7 @@ export interface Entity {
 }
 
 type Velocity = Position;
-interface Position {
+export interface Position {
   x: number;
   y: number;
 }

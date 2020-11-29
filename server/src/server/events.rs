@@ -1,4 +1,4 @@
-use crate::server::game_objects::GameMap;
+use crate::server::game_objects::{Coordinates, GameMap};
 use rand::distributions::{Distribution, Standard};
 use rand::Rng;
 use serde;
@@ -14,6 +14,7 @@ pub struct RoomLeaderEvent {
 pub struct PlayerJoinedGameEvent {
     pub player_id: String,
     pub player_type: PlayerType,
+    pub spawn: Coordinates,
 }
 
 #[derive(Clone, Debug, Serialize)]
@@ -37,10 +38,12 @@ pub struct GameStateEvent {
 pub struct JoinedGame {
     pub ok: bool,
     pub reason: Option<String>,
+    pub code: Option<String>,
     pub player_type: Option<PlayerType>,
+    pub spawn: Option<Coordinates>,
 }
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Serialize, Clone, PartialEq)]
 pub enum PlayerType {
     BLUE,
     RED,

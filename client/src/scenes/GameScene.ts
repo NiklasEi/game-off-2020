@@ -7,6 +7,7 @@ import {
   PlayerLeftGamePayload,
   PlayerStateInboundPayload,
   PlayerType,
+  Position,
   SetMapPayload
 } from '../networking/MultiplayerEvent';
 import { assetKeys, bodyLabels, events, scenes, tileSize } from '../utils/constants';
@@ -35,11 +36,18 @@ export class GameScene extends Phaser.Scene {
   private session?: Session;
   private keys!: Control;
   private gameMode: GameMode = GameMode.SINGLE_PLAYER;
+  private code?: string;
   private playerType?: PlayerType;
+  private spawn: Position = {
+    x: 7 * tileSize,
+    y: 7 * tileSize
+  };
   private laserGroup?: LaserGroup;
   private asteroids?: AsteroidGroup;
   private multiPlayerStarted: boolean = false;
   matterCollision: any;
+  public maxHealth: number = 100;
+  public health: number = this.maxHealth;
 
   constructor() {
     super(scenes.gameScene);
@@ -56,10 +64,22 @@ export class GameScene extends Phaser.Scene {
   public init(data: any) {
     this.gameMode = data.mode;
     this.session = data.session;
+    this.code = data.code;
+    if (data.spawn !== undefined) {
+      this.spawn = data.spawn;
+    }
     this.playerType = data.playerType;
   }
 
   public async create() {
+    const codeInput = document.getElementById('gameCode');
+    if (codeInput !== null) {
+      codeInput.style.display = 'none';
+    }
+    const codeCaption = document.getElementById('codeCaption');
+    if (codeCaption !== null) {
+      codeCaption.style.display = 'none';
+    }
     sceneEvents.once(
       events.startGame,
       () => {
@@ -67,7 +87,7 @@ export class GameScene extends Phaser.Scene {
       },
       this
     );
-    this.scene.run(scenes.gameHud, { gameMode: this.gameMode, session: this.session });
+    this.scene.run(scenes.gameHud, { gameMode: this.gameMode, session: this.session, code: this.code });
     // prepare map
     const map = this.make.tilemap({ key: assetKeys.map.space });
     const spaceTileset = map.addTilesetImage('stars', assetKeys.map.tiles.stars, tileSize, tileSize, 1, 2);
@@ -90,7 +110,7 @@ export class GameScene extends Phaser.Scene {
     // The player and its settings
     const spaceShipShape = this.cache.json.get(assetKeys.ship.shape);
     const playerSpaceShipKey = this.getPlayerImageKeyFromType(this.playerType);
-    this.spaceShip = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
+    this.spaceShip = this.matter.add.image(this.spawn.x, this.spawn.y, playerSpaceShipKey, undefined, {
       vertices: spaceShipShape,
       friction: 0,
       frictionStatic: 0,
@@ -233,7 +253,7 @@ export class GameScene extends Phaser.Scene {
     console.log(`New player ${payload.playerId}`);
     const spaceShipShape = this.cache.json.get(assetKeys.ship.shape);
     const playerSpaceShipKey = this.getPlayerImageKeyFromType(payload.playerType);
-    const player = this.matter.add.image(7 * tileSize, 7 * tileSize, playerSpaceShipKey, undefined, {
+    const player = this.matter.add.image(payload.spawn.x, payload.spawn.y, playerSpaceShipKey, undefined, {
       vertices: spaceShipShape,
       friction: 0,
       frictionStatic: 0,
@@ -249,9 +269,9 @@ export class GameScene extends Phaser.Scene {
     this.players = this.players.filter((player) => {
       if (player.name === payload.playerId) {
         player.destroy();
-        return true;
+        return false;
       }
-      return false;
+      return true;
     });
   }
 

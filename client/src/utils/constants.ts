@@ -15,7 +15,8 @@ export const events = {
   serverConnected: 'server-connected',
   playerIsRoomLeader: 'is-room-leader',
   newFrameTimestamp: 'new-frame',
-  shootAsteroids: 'shoot-asteroids'
+  shootAsteroids: 'shoot-asteroids',
+  updateHealth: 'update-health'
 };
 
 export const assetKeys = {
@@ -35,11 +36,16 @@ export const assetKeys = {
   menu: {
     start: 'start-button',
     controls: 'controls',
-    createUniverse: 'create-universe'
+    createUniverse: 'create-universe',
+    joinUniverse: 'join-universe',
+    play: 'play-button'
   },
   hud: {
     icon: 'spaceship-icon',
-    laser: 'laser'
+    laser: 'laser',
+    roomCode: 'room-code-area',
+    redBar: 'red-bar',
+    grayBar: 'grey-bar'
   },
   map: {
     space: 'space',

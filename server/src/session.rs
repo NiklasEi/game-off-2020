@@ -7,7 +7,7 @@ use actix_web_actors::ws;
 
 use serde_json::json;
 
-use crate::message::{GameMessage, GameState, JoinGame, LeaveGame, Message, StartGame};
+use crate::message::{CreateGame, GameMessage, GameState, JoinGame, LeaveGame, Message, StartGame};
 use crate::server::WsGameServer;
 use std::time::{Duration, Instant};
 
@@ -63,6 +63,45 @@ impl PlayerSession {
                 if let Ok(result) = result {
                     match result {
                         Ok(id) => {
+                            act.id = id;
+                            act.game_name = Some(game_name);
+                        }
+                        Err(reason) => {
+                            ctx.text(format!(
+                                "Event JoinGame:{{\"ok\": false,\"reason\":\"{}\"}}",
+                                reason
+                            ));
+                        }
+                    }
+                }
+                fut::ready(())
+            })
+            .wait(ctx);
+    }
+
+    pub fn create_game(&mut self, ctx: &mut ws::WebsocketContext<Self>) {
+        match &self.game_name {
+            Some(game_name) => {
+                let leave_msg = LeaveGame {
+                    game_name: game_name.clone(),
+                    player_id: self.id.clone(),
+                };
+                self.issue_system_sync(leave_msg, ctx);
+            }
+            _ => (),
+        }
+
+        let create_msg = CreateGame {
+            player: ctx.address().recipient(),
+        };
+
+        WsGameServer::from_registry()
+            .send(create_msg)
+            .into_actor(self)
+            .then(|result, act, ctx| {
+                if let Ok(result) = result {
+                    match result {
+                        Ok((id, game_name)) => {
                             act.id = id;
                             act.game_name = Some(game_name);
                         }
@@ -260,21 +299,22 @@ impl StreamHandler<Result<ws::Message, ws::ProtocolError>> for PlayerSession {
                                 match code {
                                     Some(code) => {
                                         let chars: Vec<char> = code.chars().collect();
-                                        if chars.len() != 5 {
-                                            ctx.text("Event JoinGame:{\"ok\": false,\"reason\":\"Code should be 5 characters\"}");
+                                        if chars.len() != 5
+                                            || chars.iter().any(|single_char| -> bool {
+                                                !single_char.is_alphanumeric()
+                                            })
+                                        {
+                                            ctx.text("Event JoinGame:{\"ok\": false,\"reason\":\"code invalid\"}");
                                             return;
                                         }
-                                        if chars.iter().any(|single_char| -> bool {
-                                            !single_char.is_alphanumeric()
-                                        }) {
-                                            ctx.text("Event JoinGame:{\"ok\": false,\"reason\":\"Code should be alpha numeric\"}");
-                                            return;
-                                        }
-                                        self.join_game(code, ctx);
+                                        self.join_game(&code, ctx);
                                     }
                                     _ => (),
                                 };
                             }
+                        }
+                        Some("Event CreateGame") => {
+                            self.create_game(ctx);
                         }
                         Some("Event Ping") => {
                             ctx.text(msg);

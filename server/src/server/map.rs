@@ -7,15 +7,35 @@ impl GameMap {
     const PLANET_RADIUS: usize = 125;
     const DISTANCE_BETWEEN_PLANETS: usize = 2000;
     const NUMBER_OF_PLANETS: usize = 50;
-    const MAP_SIZE: usize = 51_200;
+    const MAP_TILE_SIZE: usize = 256;
+    const MAP_NUMBER_OF_TILES: usize = 200;
+    const MAP_SIZE: usize = Self::MAP_TILE_SIZE * Self::MAP_NUMBER_OF_TILES;
     pub fn create_random() -> Self {
         GameMap {
             size: Coordinates {
                 x: Self::MAP_SIZE,
                 y: Self::MAP_SIZE,
             },
-            start_point: Coordinates { x: 50, y: 50 },
             planets: Self::place_random_planets(),
+            player_cap: 4,
+            spawns: vec![
+                Coordinates {
+                    x: 7 * Self::MAP_TILE_SIZE,
+                    y: 7 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 8 * Self::MAP_TILE_SIZE,
+                    y: 7 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 7 * Self::MAP_TILE_SIZE,
+                    y: 8 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 8 * Self::MAP_TILE_SIZE,
+                    y: 8 * Self::MAP_TILE_SIZE,
+                },
+            ],
         }
     }
 
@@ -71,6 +91,20 @@ impl GameMap {
                 vector.0.pow(2) + vector.1.pow(2) < Self::DISTANCE_BETWEEN_PLANETS.pow(2) as i64
             })
             .is_none()
+    }
+
+    pub fn get_spawn_for_player(&self, player_number: usize) -> Coordinates {
+        let spawn = self.spawns.get(player_number);
+        match spawn {
+            Some(spawn) => Coordinates {
+                x: spawn.x,
+                y: spawn.y,
+            },
+            None => Coordinates {
+                x: 5 * 256,
+                y: 5 * 256,
+            },
+        }
     }
 }
 
