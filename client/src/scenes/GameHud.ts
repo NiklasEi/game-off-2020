@@ -49,7 +49,7 @@ export default class GameHud extends Phaser.Scene {
       return;
     }
     const scale = (currentHealth / maxHealth) * this.healthBarScale;
-    this.redHealthBar.x = this.redHealthBar.x - 100 * (1 - currentHealth / maxHealth);
+    this.redHealthBar.x = this.game.renderer.width / 2 - 100 * (1 - currentHealth / maxHealth);
     this.redHealthBar.scaleX = scale;
   }
 
