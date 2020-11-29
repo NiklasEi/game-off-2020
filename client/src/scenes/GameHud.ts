@@ -54,7 +54,6 @@ export default class GameHud extends Phaser.Scene {
   }
 
   private playerDied(deadSince: number, deadUntil: number) {
-    console.log(`dead: ${deadSince} -> ${deadUntil}`);
     this.deadSince = deadSince;
     this.deadUntil = deadUntil;
     this.dead = true;
