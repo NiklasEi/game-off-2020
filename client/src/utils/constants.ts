@@ -14,7 +14,8 @@ export const events = {
   joinGame: 'join-game',
   serverConnected: 'server-connected',
   playerIsRoomLeader: 'is-room-leader',
-  newFrameTimestamp: 'new-frame'
+  newFrameTimestamp: 'new-frame',
+  updateHealth: 'update-health'
 };
 
 export const assetKeys = {
@@ -41,7 +42,9 @@ export const assetKeys = {
   hud: {
     icon: 'spaceship-icon',
     laser: 'laser',
-    roomCode: 'room-code-area'
+    roomCode: 'room-code-area',
+    redBar: 'red-bar',
+    grayBar: 'grey-bar'
   },
   map: {
     space: 'space',

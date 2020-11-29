@@ -21,6 +21,9 @@ export default class GameHud extends Phaser.Scene {
   private gameMode?: GameMode;
   private session?: Session;
   private code?: string;
+  private readonly healthBarScale: number = 2;
+  private greyHealthBar!: Phaser.GameObjects.Image;
+  private redHealthBar!: Phaser.GameObjects.Image;
   private gameStarted: boolean = false;
 
   constructor() {
@@ -35,6 +38,16 @@ export default class GameHud extends Phaser.Scene {
 
   public updatePing(pingInMilliseconds: number) {
     this.ping.setText(`${pingInMilliseconds}ms`);
+  }
+
+  public updateHealth(maxHealth: number, currentHealth: number) {
+    if (currentHealth <= 0) {
+      this.redHealthBar.alpha = 0;
+      return;
+    }
+    const scale = (currentHealth / maxHealth) * this.healthBarScale;
+    this.redHealthBar.x = this.redHealthBar.x - 100 * (1 - currentHealth / maxHealth);
+    this.redHealthBar.scaleX = scale;
   }
 
   public updateFps(timestamp: number) {
@@ -107,9 +120,14 @@ export default class GameHud extends Phaser.Scene {
     }
     this.ping = this.add.text(1125, 10, '');
     this.fps = this.add.text(10, 10, '');
-
     sceneEvents.on(events.updatePing, this.updatePing, this);
     sceneEvents.on(events.newFrameTimestamp, this.updateFps, this);
+
+    this.greyHealthBar = this.add.image(this.game.renderer.width / 2, 40, assetKeys.hud.grayBar);
+    this.greyHealthBar.scaleX = this.healthBarScale;
+    this.redHealthBar = this.add.image(this.game.renderer.width / 2, 40, assetKeys.hud.redBar);
+    this.redHealthBar.scaleX = this.healthBarScale;
+    sceneEvents.on(events.updateHealth, this.updateHealth, this);
 
     sceneEvents.on(
       events.playerIsRoomLeader,

@@ -44,6 +44,8 @@ export class GameScene extends Phaser.Scene {
   private laserGroup?: LaserGroup;
   private multiPlayerStarted: boolean = false;
   matterCollision: any;
+  public maxHealth: number = 100;
+  public health: number = this.maxHealth;
 
   constructor() {
     super(scenes.gameScene);

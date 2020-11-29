@@ -36,9 +36,11 @@ export default class Preloader extends Phaser.Scene {
     this.load.image(assetKeys.menu.play, 'assets/mainMenu/playButton.png');
 
     // HUD
-    this.load.image(assetKeys.hud.laser, 'assets/spaceship/laser.png');
+    this.load.image(assetKeys.hud.laser, 'assets/hud/laser.png');
     this.load.image(assetKeys.hud.icon, 'assets/icon.png');
     this.load.image(assetKeys.hud.roomCode, 'assets/mainMenu/roomCode.png');
+    this.load.image(assetKeys.hud.redBar, 'assets/hud/redBar.png');
+    this.load.image(assetKeys.hud.grayBar, 'assets/hud/grayBar.png');
   }
 
   create() {
