@@ -28,6 +28,14 @@ export default class Preloader extends Phaser.Scene {
     this.load.image(assetKeys.ship.fire, 'assets/particles/fire.png');
     this.load.image(assetKeys.ship.laserShot, 'assets/spaceship/laser-shot.png');
 
+    // asteroids
+    this.load.image(assetKeys.asteroid.one, 'assets/particles/astroid1.png');
+    this.load.image(assetKeys.asteroid.two, 'assets/particles/astroid2.png');
+    this.load.image(assetKeys.asteroid.three, 'assets/particles/astroid3.png');
+    this.load.image(assetKeys.asteroid.four, 'assets/particles/astroid4.png');
+    this.load.image(assetKeys.asteroid.five, 'assets/particles/astroid5.png');
+    this.load.image(assetKeys.asteroid.six, 'assets/particles/astroid6.png');
+
     // menu
     this.load.image(assetKeys.menu.start, 'assets/mainMenu/start.jpeg');
     this.load.image(assetKeys.menu.controls, 'assets/mainMenu/controls.png');

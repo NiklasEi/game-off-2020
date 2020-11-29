@@ -84,7 +84,7 @@ export interface Entity {
   angularVelocity: number;
 }
 
-type Velocity = Position;
+export type Velocity = Position;
 export interface Position {
   x: number;
   y: number;
