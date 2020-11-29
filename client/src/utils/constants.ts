@@ -3,7 +3,8 @@ export const tileSize = 256;
 export const bodyLabels = {
   ownSpaceship: 'own-spaceship',
   otherSpaceship: 'other-spaceship',
-  ownLaserShot: 'own-laser-shot'
+  ownLaserShot: 'own-laser-shot',
+  asteroid: 'asteroid'
 };
 
 export const events = {
@@ -52,6 +53,14 @@ export const assetKeys = {
     tiles: {
       stars: 'stars-tiles'
     }
+  },
+  asteroid: {
+    one: 'asteroid-1',
+    two: 'asteroid-2',
+    three: 'asteroid-3',
+    four: 'asteroid-4',
+    five: 'asteroid-5',
+    six: 'asteroid-6'
   }
 };
 

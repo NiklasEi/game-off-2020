@@ -13,9 +13,9 @@ import {
 import { assetKeys, bodyLabels, events, scenes, tileSize } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
 import { sceneEvents } from '../events/EventCenter';
-import Vector2 = Phaser.Math.Vector2;
-import AsteroidGroup from "../asteroid/AsteroidGroup";
+import AsteroidGroup from '../asteroid/AsteroidGroup';
 import LaserGroup from '../laser/Laser';
+import Vector2 = Phaser.Math.Vector2;
 
 interface Control {
   W: any;
@@ -25,11 +25,14 @@ interface Control {
 }
 
 export class GameScene extends Phaser.Scene {
+  public static UPPER_WORLD_BOUND: number = 5;
+  public static LOWER_WORLD_BOUND: number = 197;
   private spaceShip!: Phaser.Physics.Matter.Image;
   private spaceShipEmitterLeft!: Phaser.GameObjects.Particles.ParticleEmitter;
   private spaceShipEmitterRight!: Phaser.GameObjects.Particles.ParticleEmitter;
   private readonly leftEngine = new Vector2(-52, -28);
   private readonly rightEngine = new Vector2(-52, 28);
+  private lastAsteroid: number = Date.now().valueOf();
   private cursors?: Phaser.Types.Input.Keyboard.CursorKeys;
   private angularVelocity: number = 0;
   private players: Phaser.Physics.Matter.Image[] = [];
@@ -117,12 +120,32 @@ export class GameScene extends Phaser.Scene {
       frictionAir: 0,
       label: bodyLabels.ownSpaceship
     });
-    const bounds = this.matter.world.setBounds(5 * tileSize, 5 * tileSize, 197 * tileSize, 197 * tileSize);
+    this.matterCollision.addOnCollideStart({
+      objectA: this.spaceShip,
+      callback: (eventData: any) => {
+        const { bodyB, gameObjectB } = eventData;
+        if (bodyB.label === bodyLabels.asteroid) {
+          gameObjectB?.destroy();
+          this.health -= 100;
+          if (this.health <= 0) {
+            console.log('you dead...');
+          } else {
+            sceneEvents.emit(events.updateHealth, this.maxHealth, this.health);
+          }
+        }
+      }
+    });
+    const bounds = this.matter.world.setBounds(
+      GameScene.UPPER_WORLD_BOUND * tileSize,
+      GameScene.UPPER_WORLD_BOUND * tileSize,
+      GameScene.LOWER_WORLD_BOUND * tileSize,
+      GameScene.LOWER_WORLD_BOUND * tileSize
+    );
     this.matterCollision.addOnCollideStart({
       objectA: Object.values(bounds.walls),
       callback: (eventData: any) => {
         const { bodyB, gameObjectB } = eventData;
-        if (bodyB.label === bodyLabels.ownLaserShot) {
+        if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.asteroid) {
           gameObjectB?.destroy();
         }
       }
@@ -151,15 +174,17 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    if (this.asteroids) {
-      const velocity = new Vector2(15, 0).rotate(this.spaceShip.rotation);
-      this.asteroids.shootAsteroids(this.spaceShip.x, this.spaceShip.y, velocity);
+    const timeStamp = Date.now().valueOf();
+    if (this.gameMode === GameMode.SINGLE_PLAYER || this.session?.isRoomLeader === true) {
+      if (timeStamp - this.lastAsteroid > 500) {
+        this.lastAsteroid = timeStamp;
+        this.asteroids?.shootAsteroid();
+      }
     }
 
     const cursors = this.cursors;
     if (cursors === undefined) return;
 
-    const timeStamp = Date.now().valueOf();
     sceneEvents.emit(events.newFrameTimestamp, timeStamp);
 
     const speedUpperThreshold = 10;
@@ -298,11 +323,22 @@ export class GameScene extends Phaser.Scene {
   }
 
   public setMap(payload: SetMapPayload) {
+    const planets: any[] = [];
     payload.planets.forEach((planetData) => {
       const key = this.getPlanetImageKeyFromType(planetData.planetType);
       const planet = this.matter.add.image(planetData.position.x, planetData.position.y, key);
       planet.setCircle(planetData.radius);
       planet.setStatic(true);
+      planets.push(planet);
+    });
+    this.matterCollision.addOnCollideStart({
+      objectA: planets,
+      callback: (eventData: any) => {
+        const { bodyB, gameObjectB } = eventData;
+        if (bodyB.label === bodyLabels.asteroid || bodyB.label === bodyLabels.ownLaserShot) {
+          gameObjectB?.destroy();
+        }
+      }
     });
   }
 
