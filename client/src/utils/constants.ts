@@ -57,7 +57,8 @@ export const assetKeys = {
   map: {
     space: 'space',
     tiles: {
-      stars: 'stars-tiles'
+      stars: 'stars-tiles',
+      asteroids: 'asteroids-tiles'
     }
   },
   asteroid: {

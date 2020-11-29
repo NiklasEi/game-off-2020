@@ -26,7 +26,7 @@ interface Control {
 
 export class GameScene extends Phaser.Scene {
   public static UPPER_WORLD_BOUND: number = 5;
-  public static LOWER_WORLD_BOUND: number = 90;
+  public static LOWER_WORLD_BOUND: number = 95;
   private spaceShip!: Phaser.Physics.Matter.Image;
   private spaceShipEmitterLeft!: Phaser.GameObjects.Particles.ParticleEmitter;
   private spaceShipEmitterRight!: Phaser.GameObjects.Particles.ParticleEmitter;
@@ -97,7 +97,9 @@ export class GameScene extends Phaser.Scene {
     // prepare map
     const map = this.make.tilemap({ key: assetKeys.map.space });
     const spaceTileset = map.addTilesetImage('stars', assetKeys.map.tiles.stars, tileSize, tileSize, 1, 2);
+    const asteroidTileset = map.addTilesetImage('asteroids', assetKeys.map.tiles.asteroids, tileSize, tileSize, 1, 2);
     map.createStaticLayer('stars', spaceTileset);
+    map.createStaticLayer('asteroids', asteroidTileset);
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
     const particles = this.add.particles(assetKeys.ship.fire);
@@ -130,7 +132,7 @@ export class GameScene extends Phaser.Scene {
         if (bodyB.label === bodyLabels.asteroid) {
           gameObjectB?.destroy();
           if (this.dead) return;
-          this.health -= 100;
+          this.health -= 40;
           if (this.health <= 0) {
             const timestamp = Date.now().valueOf();
             sceneEvents.emit(events.playerDied, timestamp, timestamp + 10000);
@@ -147,8 +149,8 @@ export class GameScene extends Phaser.Scene {
     const bounds = this.matter.world.setBounds(
       GameScene.UPPER_WORLD_BOUND * tileSize,
       GameScene.UPPER_WORLD_BOUND * tileSize,
-      GameScene.LOWER_WORLD_BOUND * tileSize,
-      GameScene.LOWER_WORLD_BOUND * tileSize
+      (GameScene.LOWER_WORLD_BOUND - GameScene.UPPER_WORLD_BOUND) * tileSize,
+      (GameScene.LOWER_WORLD_BOUND - GameScene.UPPER_WORLD_BOUND) * tileSize
     );
     this.matterCollision.addOnCollideStart({
       objectA: Object.values(bounds.walls),
@@ -217,6 +219,11 @@ export class GameScene extends Phaser.Scene {
     sceneEvents.emit(events.newFrameTimestamp, timeStamp);
 
     if (this.dead) {
+      this.spaceShip.setRotation(0);
+      this.spaceShip.setAngularVelocity(0);
+      this.spaceShip.setVelocity(0, 0);
+      this.spaceShip.x = this.spawn.x;
+      this.spaceShip.y = this.spawn.y;
       return;
     }
 
