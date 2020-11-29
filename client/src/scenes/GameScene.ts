@@ -38,7 +38,7 @@ export class GameScene extends Phaser.Scene {
   private players: Phaser.Physics.Matter.Image[] = [];
   private session?: Session;
   private keys!: Control;
-  private gameMode: GameMode = GameMode.SINGLE_PLAYER;
+  public gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private code?: string;
   private playerType?: PlayerType;
   private spawn: Position = {
@@ -132,6 +132,9 @@ export class GameScene extends Phaser.Scene {
           } else {
             sceneEvents.emit(events.updateHealth, this.maxHealth, this.health);
           }
+        }
+        if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
+          gameObjectB?.destroy()
         }
       }
     });
@@ -287,6 +290,16 @@ export class GameScene extends Phaser.Scene {
     });
     player.name = payload.playerId;
     this.players.push(player);
+
+    this.matterCollision.addOnCollideStart({
+      objectA: player,
+      callback: (eventData: any) => {
+        const { bodyB, gameObjectB } = eventData;
+        if (bodyB.label === bodyLabels.asteroid || bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
+          gameObjectB?.destroy()
+        }
+      }
+    });
   }
 
   removePlayer(payload: PlayerLeftGamePayload) {
@@ -318,8 +331,11 @@ export class GameScene extends Phaser.Scene {
     }
   }
 
-  public updateGameState(payload: GameStatePayload) {
+  public updateGameState(payload: GameStatePayload, isRoomLeader: boolean) {
     console.log(`update state ${payload}`);
+    if (!isRoomLeader && payload.asteroids !== undefined) {
+      this.asteroids?.update(payload.asteroids);
+    }
   }
 
   public setMap(payload: SetMapPayload) {
@@ -370,6 +386,15 @@ export class GameScene extends Phaser.Scene {
     switch (playerType) {
       case PlayerType.YELLOW: {
         return assetKeys.ship.yellow;
+      }
+      case PlayerType.BLUE: {
+        return assetKeys.ship.blue;
+      }
+      case PlayerType.GREEN: {
+        return assetKeys.ship.green;
+      }
+      case PlayerType.RED: {
+        return assetKeys.ship.red;
       }
       default: {
         console.warn(`Unknown player type ${playerType}, falling back to yellow...`);

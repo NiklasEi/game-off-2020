@@ -2,7 +2,7 @@ import { GameScene } from '../scenes/GameScene';
 import {
   GameStatePayload,
   JoinGameAnswerPayload,
-  MultiplayerEvent,
+  MultiplayerEvent, NamedEntity,
   PlayerJoinedGamePayload,
   PlayerLeftGamePayload,
   PlayerStateInboundPayload,
@@ -32,6 +32,7 @@ export class Session {
   constructor() {
     this.establishMultiPlayerSession();
     sceneEvents.once(events.startGame, this.sendStartGame, this);
+    sceneEvents.on(events.spawnAsteroid, this.addAsteroid, this);
   }
 
   public connect(gameCode: string) {
@@ -55,6 +56,12 @@ export class Session {
 
   private getCurrentPing() {
     this.sendEvent(MultiplayerEvent.PING, { timestamp: Date.now().valueOf() });
+  }
+
+  private addAsteroid(toAdd: NamedEntity) {
+    this.sendGameStateEvent({asteroids: {
+      add: [toAdd]
+      }})
   }
 
   private setEvents() {
@@ -143,11 +150,7 @@ export class Session {
     switch (event) {
       case MultiplayerEvent.GAME_STATE: {
         const state = payload as GameStatePayload;
-        if (this.isRoomLeader) {
-          // eslint-disable-next-line no-console
-          console.warn('got game state as room leader O.o');
-        }
-        this.gameScene?.updateGameState(state);
+        this.gameScene?.updateGameState(state, this.isRoomLeader);
         break;
       }
       case MultiplayerEvent.ROOM_LEADER: {

@@ -22,7 +22,11 @@ export interface SignedGameStatePayload extends GameStatePayload {
 }
 
 export interface GameStatePayload {
-  _stuff: any;
+  otherLaserShots?: Entity[];
+  asteroids: {
+    remove?: string[],
+    add?: NamedEntity[]
+  };
 }
 
 export interface StartGamePayload {
@@ -56,7 +60,10 @@ export enum PlanetType {
 }
 
 export enum PlayerType {
-  YELLOW = 'YELLOW'
+  YELLOW = 'YELLOW',
+  BLUE = 'BLUE',
+  GREEN = 'GREEN',
+  RED = 'RED'
 }
 
 export interface RoomLeaderPayload {
@@ -75,6 +82,10 @@ export interface PlayerLeftGamePayload {
 
 export interface EntityWithId extends Entity {
   id: string;
+}
+
+export interface NamedEntity extends Entity {
+  name: string;
 }
 
 export interface Entity {
