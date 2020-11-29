@@ -18,7 +18,7 @@ impl GameMap {
                 y: Self::MAP_SIZE,
             },
             planets: Self::place_random_planets(),
-            player_cap: 4,
+            player_cap: 10,
             spawns: vec![
                 Coordinates {
                     x: 7 * Self::MAP_TILE_SIZE,
@@ -35,6 +35,30 @@ impl GameMap {
                 Coordinates {
                     x: 8 * Self::MAP_TILE_SIZE,
                     y: 8 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 9 * Self::MAP_TILE_SIZE,
+                    y: 7 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 9 * Self::MAP_TILE_SIZE,
+                    y: 8 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 7 * Self::MAP_TILE_SIZE,
+                    y: 9 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 8 * Self::MAP_TILE_SIZE,
+                    y: 9 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 9 * Self::MAP_TILE_SIZE,
+                    y: 9 * Self::MAP_TILE_SIZE,
+                },
+                Coordinates {
+                    x: 10 * Self::MAP_TILE_SIZE,
+                    y: 7 * Self::MAP_TILE_SIZE,
                 },
             ],
         }
@@ -81,6 +105,12 @@ impl GameMap {
     }
 
     fn does_fit_with_planets(planets: &Vec<Planet>, x: usize, y: usize) -> bool {
+        if x < Self::OUTER_BOUNDS || x > Self::MAP_SIZE - Self::OUTER_BOUNDS {
+            return false;
+        }
+        if y < Self::OUTER_BOUNDS || y > Self::MAP_SIZE - Self::OUTER_BOUNDS {
+            return false;
+        }
         planets
             .iter()
             .find(|planet| -> bool {
@@ -153,13 +183,42 @@ mod test {
 
     #[test]
     fn does_not_place_planets_in_outer_bounds() {
+        let planets: Vec<Planet> = vec![];
         assert_eq!(
             super::GameMap::does_fit_with_planets(
-                vec![]::<>,
-                super::GameMap::OUTER_BOUNDS,
-                super::GameMap::OUTER_BOUNDS + super::GameMap::DISTANCE_BETWEEN_PLANETS
+                &planets,
+                super::GameMap::OUTER_BOUNDS - 1,
+                super::GameMap::OUTER_BOUNDS
             ),
-            false
+            false,
+            "Cannot be too far left"
+        );
+        assert_eq!(
+            super::GameMap::does_fit_with_planets(
+                &planets,
+                super::GameMap::MAP_SIZE - super::GameMap::OUTER_BOUNDS + 1,
+                super::GameMap::OUTER_BOUNDS
+            ),
+            false,
+            "Cannot be too far right"
+        );
+        assert_eq!(
+            super::GameMap::does_fit_with_planets(
+                &planets,
+                super::GameMap::OUTER_BOUNDS,
+                super::GameMap::OUTER_BOUNDS - 1
+            ),
+            false,
+            "Cannot be too far up"
+        );
+        assert_eq!(
+            super::GameMap::does_fit_with_planets(
+                &planets,
+                super::GameMap::OUTER_BOUNDS,
+                super::GameMap::MAP_SIZE - super::GameMap::OUTER_BOUNDS + 1
+            ),
+            false,
+            "Cannot be too far down"
         );
     }
 }

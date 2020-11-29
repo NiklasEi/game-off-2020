@@ -49,15 +49,27 @@ pub enum PlayerType {
     RED,
     YELLOW,
     GREEN,
+    GRAY,
+    LIGHTBLUE,
+    ORANGE,
+    PINK,
+    PURPLE,
+    TURQUOISE,
 }
 
 impl Distribution<PlayerType> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PlayerType {
-        match rng.gen_range(0, 4) {
+        match rng.gen_range(0, 10) {
             0 => PlayerType::BLUE,
             1 => PlayerType::RED,
             2 => PlayerType::YELLOW,
-            _ => PlayerType::GREEN,
+            3 => PlayerType::GREEN,
+            4 => PlayerType::GRAY,
+            5 => PlayerType::LIGHTBLUE,
+            6 => PlayerType::ORANGE,
+            7 => PlayerType::PINK,
+            8 => PlayerType::PURPLE,
+            _ => PlayerType::TURQUOISE,
         }
     }
 }

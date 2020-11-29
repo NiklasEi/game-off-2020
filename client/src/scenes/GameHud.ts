@@ -58,6 +58,7 @@ export default class GameHud extends Phaser.Scene {
     this.deadSince = deadSince;
     this.deadUntil = deadUntil;
     this.dead = true;
+    this.redHealthBar.x = this.game.renderer.width / 2;
     this.redHealthBar.scaleX = 0;
   }
 

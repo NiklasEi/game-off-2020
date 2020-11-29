@@ -36,6 +36,13 @@ export const assetKeys = {
     blue: 'spaceship-blue',
     green: 'spaceship-green',
     red: 'spaceship-red',
+    gray: 'spaceship-gray',
+    lightblue: 'spaceship-lightblue',
+    orange: 'spaceship-orange',
+    pink: 'spaceship-pink',
+    purple: 'spaceship-purple',
+    turquoise: 'spaceship-turquoise',
+
     shape: 'spaceship-shape',
     fire: 'fire',
     laserShot: 'laser-shot'

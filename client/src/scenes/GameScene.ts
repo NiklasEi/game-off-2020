@@ -173,6 +173,8 @@ export class GameScene extends Phaser.Scene {
     sceneEvents.on(
       events.playerDied,
       () => {
+        this.spaceShipEmitterRight.on = false;
+        this.spaceShipEmitterLeft.on = false;
         this.spaceShip.setTint(0x808080);
         this.spaceShip.setRotation(0);
         this.spaceShip.setAngularVelocity(0);
@@ -185,6 +187,7 @@ export class GameScene extends Phaser.Scene {
     sceneEvents.on(
       events.playerRespawn,
       () => {
+        this.health = this.maxHealth;
         this.spaceShip.clearTint();
         this.dead = false;
       },
@@ -436,6 +439,24 @@ export class GameScene extends Phaser.Scene {
       }
       case PlayerType.RED: {
         return assetKeys.ship.red;
+      }
+      case PlayerType.GRAY: {
+        return assetKeys.ship.gray;
+      }
+      case PlayerType.LIGHTBLUE: {
+        return assetKeys.ship.lightblue;
+      }
+      case PlayerType.ORANGE: {
+        return assetKeys.ship.orange;
+      }
+      case PlayerType.PINK: {
+        return assetKeys.ship.pink;
+      }
+      case PlayerType.PURPLE: {
+        return assetKeys.ship.purple;
+      }
+      case PlayerType.TURQUOISE: {
+        return assetKeys.ship.turquoise;
       }
       default: {
         console.warn(`Unknown player type ${playerType}, falling back to yellow...`);

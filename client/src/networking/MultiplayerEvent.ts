@@ -63,7 +63,13 @@ export enum PlayerType {
   YELLOW = 'YELLOW',
   BLUE = 'BLUE',
   GREEN = 'GREEN',
-  RED = 'RED'
+  RED = 'RED',
+  GRAY = 'GRAY',
+  LIGHTBLUE = 'LIGHTBLUE',
+  ORANGE = 'ORANGE',
+  PINK = 'PINK',
+  PURPLE = 'PURPLE',
+  TURQUOISE = 'TURQUOISE'
 }
 
 export interface RoomLeaderPayload {
