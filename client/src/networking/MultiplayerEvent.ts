@@ -43,6 +43,7 @@ export interface JoinGameAnswerPayload {
 
 export interface SetMapPayload {
   planets: Planet[];
+  enemyPlanet: Planet;
 }
 
 interface Planet {

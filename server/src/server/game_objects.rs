@@ -10,6 +10,7 @@ pub struct GameMap {
     pub planets: Vec<Planet>,
     pub player_cap: usize,
     pub spawns: Vec<Coordinates>,
+    pub enemy_planet: Planet,
 }
 
 #[derive(Debug, Serialize)]

@@ -391,6 +391,15 @@ export class GameScene extends Phaser.Scene {
       planet.setStatic(true);
       planets.push(planet);
     });
+    const enemyPlanet = this.matter.add.image(
+      payload.enemyPlanet.position.x,
+      payload.enemyPlanet.position.y,
+      this.getPlanetImageKeyFromType(payload.enemyPlanet.planetType)
+    );
+    enemyPlanet.setCircle(payload.enemyPlanet.radius + 10);
+    enemyPlanet.setStatic(true);
+    planets.push(enemyPlanet);
+
     this.matterCollision.addOnCollideStart({
       objectA: planets,
       callback: (eventData: any) => {
