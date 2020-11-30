@@ -8,7 +8,8 @@ export const bodyLabels = {
   asteroid: 'asteroid',
   planet: 'planet',
   evilPlanet: 'evil-planet',
-  enemyRocket: 'enemy-rocket'
+  missile: 'enemy-rocket',
+  otherMissile: 'other-player-missile'
 };
 
 export const events = {

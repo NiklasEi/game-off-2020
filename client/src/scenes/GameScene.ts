@@ -31,6 +31,8 @@ export class GameScene extends Phaser.Scene {
   private readonly missileCoolDown: number = 5000;
   private lastMissileTimestamp: number = 0;
   private spaceShip!: Phaser.Physics.Matter.Image;
+  private readonly otherMissiles: Map<string, Phaser.Physics.Matter.Image> = new Map();
+  private readonly otherMissileEmitters: Map<string, Phaser.GameObjects.Particles.ParticleEmitter> = new Map();
   private missile?: Phaser.Physics.Matter.Image;
   private missileEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
   private missileParticles!: Phaser.GameObjects.Particles.ParticleEmitterManager;
@@ -159,7 +161,7 @@ export class GameScene extends Phaser.Scene {
         if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
           gameObjectB?.destroy();
         }
-        if (bodyB.label === bodyLabels.enemyRocket) {
+        if (bodyB.label === bodyLabels.missile) {
           this.missile?.destroy();
           this.missile = undefined;
           sceneEvents.emit(events.missileRemoved);
@@ -272,7 +274,7 @@ export class GameScene extends Phaser.Scene {
           assetKeys.enemyRocket,
           undefined,
           {
-            label: bodyLabels.enemyRocket
+            label: bodyLabels.missile
           }
         );
         sceneEvents.emit(events.missileAdded);
@@ -473,6 +475,30 @@ export class GameScene extends Phaser.Scene {
         emitter.on = payload.emitting;
       }
     }
+
+    const missile = this.otherMissiles.get(payload.playerId);
+    if (payload.missile === undefined && missile !== undefined) {
+      missile.destroy();
+      this.otherMissiles.delete(payload.playerId);
+    } else if (payload.missile !== undefined && missile !== undefined) {
+      missile.setVelocity(payload.missile.velocity.x, payload.missile.velocity.y);
+      missile.setRotation(payload.missile.rotation);
+      this.otherMissiles.set(payload.playerId, missile);
+    } else if (payload.missile !== undefined) {
+      const missile = this.matter.add.image(
+        payload.missile.position.x,
+        payload.missile.position.y,
+        assetKeys.enemyRocket,
+        undefined,
+        {
+          label: bodyLabels.otherMissile
+        }
+      );
+      missile.setCollidesWith(-1);
+      missile.setVelocity(payload.missile.velocity.x, payload.missile.velocity.y);
+      missile.setRotation(payload.missile.rotation);
+      this.otherMissiles.set(payload.playerId, missile);
+    }
   }
 
   shootLaser() {
@@ -533,7 +559,7 @@ export class GameScene extends Phaser.Scene {
           const direction = new Vector2(this.spaceShip.x - gameObjectA.x, this.spaceShip.y - gameObjectA.y);
           this.collideShipWithPlanet(direction);
         }
-        if (bodyB.label === bodyLabels.enemyRocket) {
+        if (bodyB.label === bodyLabels.missile) {
           this.missile?.destroy();
           this.missile = undefined;
           sceneEvents.emit(events.missileRemoved);
@@ -554,7 +580,7 @@ export class GameScene extends Phaser.Scene {
           const direction = new Vector2(this.spaceShip.x - gameObjectA.x, this.spaceShip.y - gameObjectA.y);
           this.collideShipWithPlanet(direction);
         }
-        if (bodyB.label === bodyLabels.enemyRocket) {
+        if (bodyB.label === bodyLabels.missile) {
           this.missile?.destroy();
           this.missile = undefined;
           sceneEvents.emit(events.missileRemoved);
