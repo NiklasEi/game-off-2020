@@ -32,7 +32,6 @@ export class GameScene extends Phaser.Scene {
   private lastMissileTimestamp: number = 0;
   private spaceShip!: Phaser.Physics.Matter.Image;
   private readonly otherMissiles: Map<string, Phaser.Physics.Matter.Image> = new Map();
-  private readonly otherMissileEmitters: Map<string, Phaser.GameObjects.Particles.ParticleEmitter> = new Map();
   private missile?: Phaser.Physics.Matter.Image;
   private missileEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
   private missileParticles!: Phaser.GameObjects.Particles.ParticleEmitterManager;
@@ -232,7 +231,7 @@ export class GameScene extends Phaser.Scene {
 
     const timeStamp = Date.now().valueOf();
     if (this.gameMode === GameMode.SINGLE_PLAYER || this.session?.isRoomLeader === true) {
-      if (timeStamp - this.lastAsteroid > 500) {
+      if (timeStamp - this.lastAsteroid > 500 && !this.won) {
         this.lastAsteroid = timeStamp;
         this.asteroids?.shootAsteroid();
       }
@@ -267,8 +266,9 @@ export class GameScene extends Phaser.Scene {
         this.spaceShip.y - this.enemyPlanetCover.y
       );
       if (
-        distanceShipPlanet.length() < difficulty.missile.coolDown(this.gameMode) &&
-        timeStamp - this.lastMissileTimestamp > this.missileCoolDown
+        !this.won &&
+        distanceShipPlanet.length() < difficulty.missile.fireDistance(this.gameMode) &&
+        timeStamp - this.lastMissileTimestamp > difficulty.missile.coolDown(this.gameMode)
       ) {
         this.lastMissileTimestamp = timeStamp;
         const offset = distanceShipPlanet.clone().normalize().scale(180);
@@ -562,7 +562,7 @@ export class GameScene extends Phaser.Scene {
         }
         if (bodyB.label === bodyLabels.ownLaserShot) {
           gameObjectB?.destroy();
-          const damage = 10;
+          const damage = difficulty.player.laserDamageToEvil(this.gameMode);
           this.damageToCommunicate += damage;
           this.totalDamageDealt += damage;
           this.reduceEnemyHealth(damage);
@@ -710,6 +710,12 @@ export class GameScene extends Phaser.Scene {
       if (this.gameMode === GameMode.MULTI_PLAYER) {
         sceneEvents.emit(events.playerWonInMultiPlayer);
       } else {
+        if (this.missile !== undefined) {
+          this.missile.destroy();
+          this.missile = undefined;
+          this.missileEmitter.on = false;
+          sceneEvents.emit(events.missileRemoved);
+        }
         sceneEvents.emit(events.playerWonInSinglePlayer);
       }
       this.enemyPlanetCover.setAlpha(0);

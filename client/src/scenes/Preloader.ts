@@ -51,7 +51,7 @@ export default class Preloader extends Phaser.Scene {
     this.load.image(assetKeys.asteroid.six, 'assets/particles/astroid6.png');
 
     // menu
-    this.load.image(assetKeys.menu.start, 'assets/mainMenu/start.jpeg');
+    this.load.image(assetKeys.menu.start, 'assets/mainMenu/playSinglePlayerButton.png');
     this.load.image(assetKeys.menu.controls, 'assets/mainMenu/controls.png');
     this.load.image(assetKeys.menu.createUniverse, 'assets/mainMenu/createButton.png');
     this.load.image(assetKeys.menu.joinUniverse, 'assets/mainMenu/joinButton.png');

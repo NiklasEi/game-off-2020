@@ -109,6 +109,13 @@ export const difficulty = {
         return 15000;
       }
     },
+    fireDistance: (gameMode: GameMode): number => {
+      if (gameMode === GameMode.MULTI_PLAYER) {
+        return 3000;
+      } else {
+        return 4000;
+      }
+    },
     damageToPlayer: (gameMode: GameMode): number => {
       if (gameMode === GameMode.MULTI_PLAYER) {
         return 30;
@@ -123,6 +130,15 @@ export const difficulty = {
         return 24;
       } else {
         return 22;
+      }
+    }
+  },
+  player: {
+    laserDamageToEvil: (gameMode: GameMode): number => {
+      if (gameMode === GameMode.MULTI_PLAYER) {
+        return 10;
+      } else {
+        return 25;
       }
     }
   }

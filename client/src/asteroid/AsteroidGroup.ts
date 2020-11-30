@@ -6,10 +6,20 @@ import { GameMode } from '../session/GameMode';
 
 class AsteroidGroup {
   private readonly gameScene: GameScene;
-  private readonly asteroids: Phaser.Physics.Matter.Image[] = [];
+  private asteroids: Phaser.Physics.Matter.Image[] = [];
 
   constructor(gameScene: GameScene) {
     this.gameScene = gameScene;
+    sceneEvents.on(
+      events.playerWonInSinglePlayer,
+      () => {
+        for (const asteroid of this.asteroids) {
+          asteroid.destroy();
+        }
+        this.asteroids = [];
+      },
+      this
+    );
   }
 
   update(asteroids: { remove?: string[]; add?: NamedEntity[] }) {
@@ -97,8 +107,8 @@ class AsteroidGroup {
     const angularVelocity = Math.random() * (Math.random() - 0.5);
     asteroid.setAngularVelocity(angularVelocity);
     asteroid.setVelocity(velocity.x, velocity.y);
+    this.asteroids.push(asteroid);
     if (this.gameScene.gameMode === GameMode.MULTI_PLAYER) {
-      this.asteroids.push(asteroid);
       const namedEntity: NamedEntity = {
         name,
         position: spawn,
