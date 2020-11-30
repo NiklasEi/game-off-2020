@@ -606,6 +606,11 @@ export class GameScene extends Phaser.Scene {
     if (this.dead || this.won) return;
     this.health -= damage;
     if (this.health <= 0) {
+      if (this.missile !== undefined) {
+        this.missile.destroy();
+        this.missile = undefined;
+        this.missileEmitter.on = false;
+      }
       const timestamp = Date.now().valueOf();
       if (this.gameMode === GameMode.MULTI_PLAYER) {
         sceneEvents.emit(events.playerDied, timestamp, timestamp + 10000);
