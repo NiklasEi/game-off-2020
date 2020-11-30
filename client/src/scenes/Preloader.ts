@@ -22,6 +22,7 @@ export default class Preloader extends Phaser.Scene {
     this.load.image(assetKeys.planets.red, 'assets/map/planets/red.png');
     this.load.image(assetKeys.planets.white, 'assets/map/planets/white.png');
     this.load.image(assetKeys.planets.yellow, 'assets/map/planets/yellow.png');
+    this.load.image(assetKeys.planets.evil, 'assets/map/planets/evil.png');
 
     // space ship
     this.load.image(assetKeys.ship.blue, 'assets/spaceship/blue.png');
@@ -62,7 +63,7 @@ export default class Preloader extends Phaser.Scene {
     this.load.image(assetKeys.hud.roomCode, 'assets/mainMenu/roomCode.png');
     this.load.image(assetKeys.hud.redBar, 'assets/hud/redBar.png');
     this.load.image(assetKeys.hud.grayBar, 'assets/hud/grayBar.png');
-    this.load.image(assetKeys.hud.missileWarning, 'assets/hud/missileWarning.png');
+    this.load.image(assetKeys.hud.missileWarning, 'assets/hud/warning.png');
   }
 
   create() {

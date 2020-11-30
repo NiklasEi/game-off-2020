@@ -1,3 +1,5 @@
+import { GameMode } from '../session/GameMode';
+
 export const tileSize = 256;
 
 export const bodyLabels = {
@@ -40,7 +42,8 @@ export const assetKeys = {
     gas: 'planet-gas',
     red: 'planet-red',
     white: 'planet-white',
-    yellow: 'planet-yellow'
+    yellow: 'planet-yellow',
+    evil: 'evil-planet'
   },
   ship: {
     yellow: 'spaceship-yellow',
@@ -95,4 +98,32 @@ export const scenes = {
   gameScene: 'game',
   mainMenu: 'menu',
   preloader: 'preloader'
+};
+
+export const difficulty = {
+  missile: {
+    coolDown: (gameMode: GameMode): number => {
+      if (gameMode === GameMode.MULTI_PLAYER) {
+        return 10000;
+      } else {
+        return 15000;
+      }
+    },
+    damageToPlayer: (gameMode: GameMode): number => {
+      if (gameMode === GameMode.MULTI_PLAYER) {
+        return 30;
+      } else {
+        return 30;
+      }
+    }
+  },
+  asteroids: {
+    damageToPlayer: (gameMode: GameMode): number => {
+      if (gameMode === GameMode.MULTI_PLAYER) {
+        return 24;
+      } else {
+        return 22;
+      }
+    }
+  }
 };

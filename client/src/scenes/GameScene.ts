@@ -10,7 +10,7 @@ import {
   Position,
   SetMapPayload
 } from '../networking/MultiplayerEvent';
-import { assetKeys, bodyLabels, events, scenes, tileSize } from '../utils/constants';
+import { assetKeys, bodyLabels, difficulty, events, scenes, tileSize } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
 import { sceneEvents } from '../events/EventCenter';
 import AsteroidGroup from '../asteroid/AsteroidGroup';
@@ -158,7 +158,7 @@ export class GameScene extends Phaser.Scene {
         const { bodyB, gameObjectB } = eventData;
         if (bodyB.label === bodyLabels.asteroid) {
           gameObjectB?.destroy();
-          this.reducePlayerHealth(40);
+          this.reducePlayerHealth(difficulty.asteroids.damageToPlayer(this.gameMode));
         }
         if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
           gameObjectB?.destroy();
@@ -168,7 +168,7 @@ export class GameScene extends Phaser.Scene {
           this.missile = undefined;
           sceneEvents.emit(events.missileRemoved);
           this.missileEmitter.on = false;
-          this.reducePlayerHealth(50);
+          this.reducePlayerHealth(difficulty.missile.damageToPlayer(this.gameMode));
         }
       }
     });
@@ -266,7 +266,10 @@ export class GameScene extends Phaser.Scene {
         this.spaceShip.x - this.enemyPlanetCover.x,
         this.spaceShip.y - this.enemyPlanetCover.y
       );
-      if (distanceShipPlanet.length() < 5000 && timeStamp - this.lastMissileTimestamp > this.missileCoolDown) {
+      if (
+        distanceShipPlanet.length() < difficulty.missile.coolDown(this.gameMode) &&
+        timeStamp - this.lastMissileTimestamp > this.missileCoolDown
+      ) {
         this.lastMissileTimestamp = timeStamp;
         const offset = distanceShipPlanet.clone().normalize().scale(180);
         console.log('spawned rocket');
@@ -546,10 +549,8 @@ export class GameScene extends Phaser.Scene {
     this.enemyPlanetCover = this.add.image(
       payload.enemyPlanet.position.x,
       payload.enemyPlanet.position.y,
-      this.getPlanetImageKeyFromType(payload.enemyPlanet.planetType)
+      assetKeys.planets.evil
     );
-    this.enemyPlanetCover.setTintFill(0x000000);
-    this.enemyPlanetCover.setAlpha(0.5);
     enemyPlanet.setCircle(payload.enemyPlanet.radius);
     enemyPlanet.setStatic(true);
     this.matterCollision.addOnCollideStart({
