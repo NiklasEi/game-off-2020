@@ -38,11 +38,10 @@ pub enum PlanetType {
 
 impl Distribution<PlanetType> for Standard {
     fn sample<R: Rng + ?Sized>(&self, rng: &mut R) -> PlanetType {
-        match rng.gen_range(0, 5) {
-            0 => PlanetType::EARTH,
-            1 => PlanetType::RED,
-            2 => PlanetType::YELLOW,
-            3 => PlanetType::GAS,
+        match rng.gen_range(0, 4) {
+            0 => PlanetType::RED,
+            1 => PlanetType::YELLOW,
+            2 => PlanetType::GAS,
             _ => PlanetType::WHITE,
         }
     }

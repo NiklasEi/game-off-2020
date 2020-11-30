@@ -136,9 +136,9 @@ export const difficulty = {
   player: {
     laserDamageToEvil: (gameMode: GameMode): number => {
       if (gameMode === GameMode.MULTI_PLAYER) {
-        return 10;
+        return 5;
       } else {
-        return 25;
+        return 15;
       }
     }
   }

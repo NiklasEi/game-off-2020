@@ -71,7 +71,7 @@ function doesFitWithPlanets(planets: Planet[], enemyPlanet: Planet, x: number, y
 }
 
 function randomPlanetType(): PlanetType {
-  const index = Math.floor(Math.random() * 5);
+  const index = Math.floor(Math.random() * 4);
   switch (index) {
     case 0:
       return PlanetType.WHITE;
@@ -79,9 +79,7 @@ function randomPlanetType(): PlanetType {
       return PlanetType.RED;
     case 2:
       return PlanetType.YELLOW;
-    case 3:
-      return PlanetType.GAS;
     default:
-      return PlanetType.EARTH;
+      return PlanetType.GAS;
   }
 }
