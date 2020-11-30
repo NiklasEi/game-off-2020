@@ -28,8 +28,13 @@ interface Control {
 export class GameScene extends Phaser.Scene {
   public static UPPER_WORLD_BOUND: number = 5;
   public static LOWER_WORLD_BOUND: number = 95;
+  private readonly missileCoolDown: number = 5000;
+  private lastMissileTimestamp: number = 0;
   private spaceShip!: Phaser.Physics.Matter.Image;
   private missile?: Phaser.Physics.Matter.Image;
+  private missileEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private missileParticles!: Phaser.GameObjects.Particles.ParticleEmitterManager;
+  private missileParticleEmitterConfig!: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig;
   private readonly playerEmitters: Map<string, Phaser.GameObjects.Particles.ParticleEmitter[]> = new Map();
   private enemyPlanetCover!: Phaser.GameObjects.Image;
   private readonly enemyMaxHealth: number = 100;
@@ -49,9 +54,6 @@ export class GameScene extends Phaser.Scene {
   public gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private code?: string;
   private playerType?: PlayerType;
-  private missileEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
-  private missileParticles!: Phaser.GameObjects.Particles.ParticleEmitterManager;
-  private missileParticleEmitterConfig!: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig;
   public dead: boolean = false;
   public won: boolean = false;
   private spawn: Position = {
@@ -160,6 +162,7 @@ export class GameScene extends Phaser.Scene {
         if (bodyB.label === bodyLabels.enemyRocket) {
           this.missile?.destroy();
           this.missile = undefined;
+          sceneEvents.emit(events.missileRemoved);
           this.missileEmitter.on = false;
           this.reducePlayerHealth(50);
         }
@@ -259,7 +262,8 @@ export class GameScene extends Phaser.Scene {
         this.spaceShip.x - this.enemyPlanetCover.x,
         this.spaceShip.y - this.enemyPlanetCover.y
       );
-      if (distanceShipPlanet.length() < 5000) {
+      if (distanceShipPlanet.length() < 5000 && timeStamp - this.lastMissileTimestamp > this.missileCoolDown) {
+        this.lastMissileTimestamp = timeStamp;
         const offset = distanceShipPlanet.clone().normalize().scale(180);
         console.log('spawned rocket');
         this.missile = this.matter.add.image(
@@ -271,6 +275,7 @@ export class GameScene extends Phaser.Scene {
             label: bodyLabels.enemyRocket
           }
         );
+        sceneEvents.emit(events.missileAdded);
         this.missileEmitter.on = true;
         const speed = distanceShipPlanet.clone().normalize().scale(5);
         this.missile.setVelocity(speed.x, speed.y);
@@ -376,7 +381,27 @@ export class GameScene extends Phaser.Scene {
         },
         rotation: this.spaceShip.rotation,
         angularVelocity: this.angularVelocity,
-        emitting: this.spaceShipEmitterLeft.on
+        emitting: this.spaceShipEmitterLeft.on,
+        dead: this.dead,
+        missile:
+          this.missile === undefined
+            ? undefined
+            : {
+                position: {
+                  x: this.missile.x,
+                  y: this.missile.y
+                },
+                velocity: {
+                  x: this.missile.body.velocity.x,
+                  y: this.missile.body.velocity.y
+                },
+                rotation: this.missile.rotation,
+                angularVelocity: 0
+              },
+        laserShots: {
+          //   add: this.laserGroup.laserShotsToAdd(),
+          //   remove: this.laserGroup.laserShotsToRemove(),
+        }
       });
     }
   }
@@ -436,6 +461,11 @@ export class GameScene extends Phaser.Scene {
     player.setRotation(payload.rotation);
     // @ts-ignore
     player.emitting = payload.emitting;
+    if (payload.dead) {
+      player.setTint(0x808080);
+    } else {
+      player.clearTint();
+    }
 
     const emitters = this.playerEmitters.get(payload.playerId);
     if (emitters !== undefined) {
@@ -506,6 +536,7 @@ export class GameScene extends Phaser.Scene {
         if (bodyB.label === bodyLabels.enemyRocket) {
           this.missile?.destroy();
           this.missile = undefined;
+          sceneEvents.emit(events.missileRemoved);
           this.missileEmitter.on = false;
           this.reduceEnemyHealth(20);
         }
@@ -526,6 +557,7 @@ export class GameScene extends Phaser.Scene {
         if (bodyB.label === bodyLabels.enemyRocket) {
           this.missile?.destroy();
           this.missile = undefined;
+          sceneEvents.emit(events.missileRemoved);
           this.missileEmitter.on = false;
         }
       }
@@ -609,6 +641,7 @@ export class GameScene extends Phaser.Scene {
       if (this.missile !== undefined) {
         this.missile.destroy();
         this.missile = undefined;
+        sceneEvents.emit(events.missileRemoved);
         this.missileEmitter.on = false;
       }
       const timestamp = Date.now().valueOf();
@@ -617,7 +650,6 @@ export class GameScene extends Phaser.Scene {
       } else {
         sceneEvents.emit(events.updateHealth, this.maxHealth, 0);
         sceneEvents.emit(events.playerDiedInSinglePlayer);
-        this.spaceShip.setTint(0x000000);
         this.freezeSpaceship();
       }
       this.dead = true;

@@ -17,6 +17,11 @@ export interface PlayerStateInboundPayload extends PlayerStateOutboundPayload {
 
 export interface PlayerStateOutboundPayload extends Entity {
   emitting: boolean;
+  missile?: Entity;
+  laserShots: {
+    remove?: string[];
+    add?: NamedEntity[];
+  };
 }
 
 export interface SignedGameStatePayload extends GameStatePayload {

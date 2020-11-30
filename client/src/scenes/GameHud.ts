@@ -13,6 +13,7 @@ export default class GameHud extends Phaser.Scene {
   private pressHereToStartTheGame?: Phaser.GameObjects.Text;
   private inviteOthers?: Phaser.GameObjects.Text;
   private startTheGameButton?: Phaser.GameObjects.Image;
+  private missileWarning?: Phaser.GameObjects.Image;
   private coolDownLeft?: number;
   private coolDownRight?: number;
   private leftLaserCharging!: Phaser.GameObjects.Image;
@@ -158,6 +159,22 @@ export default class GameHud extends Phaser.Scene {
     this.redHealthBar.scaleY = 0.5;
     sceneEvents.on(events.updateHealth, this.updateHealth, this);
     sceneEvents.on(events.playerDied, this.playerDied, this);
+
+    sceneEvents.on(
+      events.missileAdded,
+      () => {
+        this.missileWarning = this.add.image(this.game.renderer.width / 2 + 150, 40, assetKeys.hud.missileWarning);
+        this.missileWarning.scale = 0.25;
+      },
+      this
+    );
+    sceneEvents.on(
+      events.missileRemoved,
+      () => {
+        this.missileWarning?.destroy();
+      },
+      this
+    );
 
     sceneEvents.on(
       events.playerDiedInSinglePlayer,

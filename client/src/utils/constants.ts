@@ -25,7 +25,9 @@ export const events = {
   playerDied: 'player-died',
   playerDiedInSinglePlayer: 'player-died-single-player',
   playerWonInSinglePlayer: 'player-won-single-player',
-  playerRespawn: 'player-respawn'
+  playerRespawn: 'player-respawn',
+  missileAdded: 'added-missile',
+  missileRemoved: 'removed-missile'
 };
 
 export const assetKeys = {
@@ -66,7 +68,8 @@ export const assetKeys = {
     laser: 'laser',
     roomCode: 'room-code-area',
     redBar: 'red-bar',
-    grayBar: 'grey-bar'
+    grayBar: 'grey-bar',
+    missileWarning: 'missile-warning'
   },
   map: {
     space: 'space',
