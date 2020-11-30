@@ -261,7 +261,7 @@ export class GameScene extends Phaser.Scene {
         this.spaceShip.y - this.enemyPlanetCover.y
       );
       if (distanceShipPlanet.length() < 5000) {
-        const offset = distanceShipPlanet.clone().normalize().scale(150);
+        const offset = distanceShipPlanet.clone().normalize().scale(180);
         console.log('spawned rocket');
         this.missile = this.matter.add.image(
           this.enemyPlanetCover.x + offset.x,
