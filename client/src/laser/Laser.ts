@@ -52,7 +52,7 @@ class LaserGroup {
       this.rightLastFire = timestamp;
       laserToShoot = LaserToShoot.RIGHT;
       sceneEvents.emit(events.laserFireRight, timestamp + LaserGroup.LASER_COOL_DOWN);
-      if (timestamp - this.leftLastFire > this.shootingCoolDown) {
+      if (timestamp - this.leftLastFire < this.shootingCoolDown) {
         sceneEvents.emit(events.laserFireLeft, timestamp + this.shootingCoolDown);
       }
     }
