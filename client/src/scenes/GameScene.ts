@@ -29,7 +29,7 @@ export class GameScene extends Phaser.Scene {
   public static UPPER_WORLD_BOUND: number = 5;
   public static LOWER_WORLD_BOUND: number = 95;
   private spaceShip!: Phaser.Physics.Matter.Image;
-  private enemyRocket?: Phaser.Physics.Matter.Image;
+  private missile?: Phaser.Physics.Matter.Image;
   private readonly playerEmitters: Map<string, Phaser.GameObjects.Particles.ParticleEmitter[]> = new Map();
   private enemyPlanetCover!: Phaser.GameObjects.Image;
   private readonly enemyMaxHealth: number = 100;
@@ -49,6 +49,7 @@ export class GameScene extends Phaser.Scene {
   public gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private code?: string;
   private playerType?: PlayerType;
+  private missileEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
   private missileParticles!: Phaser.GameObjects.Particles.ParticleEmitterManager;
   private missileParticleEmitterConfig!: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig;
   public dead: boolean = false;
@@ -121,6 +122,7 @@ export class GameScene extends Phaser.Scene {
       scale: { start: 1.0, end: 0 },
       blendMode: 'ADD'
     };
+    this.missileEmitter = this.missileParticles.createEmitter(this.missileParticleEmitterConfig);
     this.playerParticle = this.add.particles(assetKeys.ship.fire);
     this.playerParticleEmitterConfig = {
       speed: 10,
@@ -156,8 +158,9 @@ export class GameScene extends Phaser.Scene {
           gameObjectB?.destroy();
         }
         if (bodyB.label === bodyLabels.enemyRocket) {
-          this.enemyRocket?.destroy();
-          this.enemyRocket = undefined;
+          this.missile?.destroy();
+          this.missile = undefined;
+          this.missileEmitter.on = false;
           this.reducePlayerHealth(50);
         }
       }
@@ -244,15 +247,14 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
-    if (this.enemyRocket !== undefined) {
-      const distanceShipMissile = new Vector2(
-        this.spaceShip.x - this.enemyRocket.x,
-        this.spaceShip.y - this.enemyRocket.y
-      );
+    if (this.missile !== undefined) {
+      const distanceShipMissile = new Vector2(this.spaceShip.x - this.missile.x, this.spaceShip.y - this.missile.y);
       console.log(distanceShipMissile.length());
       const speed = distanceShipMissile.normalize().scale(5);
-      this.enemyRocket.setRotation(speed.angle() + Math.PI / 2);
-      this.enemyRocket.setVelocity(speed.x, speed.y);
+      this.missile.setRotation(speed.angle() + Math.PI / 2);
+      this.missile.setVelocity(speed.x, speed.y);
+      const rocketExhaust = new Vector2(0, 60).rotate(speed.angle() + Math.PI / 2);
+      this.missileEmitter.setPosition(this.missile.x + rocketExhaust.x, this.missile.y + rocketExhaust.y);
     } else {
       const distanceShipPlanet = new Vector2(
         this.spaceShip.x - this.enemyPlanetCover.x,
@@ -261,7 +263,7 @@ export class GameScene extends Phaser.Scene {
       if (distanceShipPlanet.length() < 5000) {
         const offset = distanceShipPlanet.clone().normalize().scale(150);
         console.log('spawned rocket');
-        this.enemyRocket = this.matter.add.image(
+        this.missile = this.matter.add.image(
           this.enemyPlanetCover.x + offset.x,
           this.enemyPlanetCover.y + offset.y,
           assetKeys.enemyRocket,
@@ -270,8 +272,9 @@ export class GameScene extends Phaser.Scene {
             label: bodyLabels.enemyRocket
           }
         );
+        this.missileEmitter.on = true;
         const speed = distanceShipPlanet.clone().normalize().scale(5);
-        this.enemyRocket.setVelocity(speed.x, speed.y);
+        this.missile.setVelocity(speed.x, speed.y);
       }
     }
 
@@ -495,23 +498,17 @@ export class GameScene extends Phaser.Scene {
         }
         if (bodyB.label === bodyLabels.ownLaserShot) {
           gameObjectB?.destroy();
-          this.enemyHealth -= 40;
-          if (this.enemyHealth <= 0) {
-            console.log('You won!');
-            this.won = true;
-            if (this.gameMode === GameMode.MULTI_PLAYER) {
-              // ToDo
-            } else {
-              sceneEvents.emit(events.playerWonInSinglePlayer);
-            }
-            this.enemyPlanetCover.setAlpha(0);
-          } else {
-            this.enemyPlanetCover.scale = this.enemyHealth / this.enemyMaxHealth;
-          }
+          this.reduceEnemyHealth(10);
         }
         if (bodyB.label === bodyLabels.ownSpaceship) {
           const direction = new Vector2(this.spaceShip.x - gameObjectA.x, this.spaceShip.y - gameObjectA.y);
           this.collideShipWithPlanet(direction);
+        }
+        if (bodyB.label === bodyLabels.enemyRocket) {
+          this.missile?.destroy();
+          this.missile = undefined;
+          this.missileEmitter.on = false;
+          this.reduceEnemyHealth(20);
         }
       }
     });
@@ -526,6 +523,11 @@ export class GameScene extends Phaser.Scene {
         if (bodyB.label === bodyLabels.ownSpaceship) {
           const direction = new Vector2(this.spaceShip.x - gameObjectA.x, this.spaceShip.y - gameObjectA.y);
           this.collideShipWithPlanet(direction);
+        }
+        if (bodyB.label === bodyLabels.enemyRocket) {
+          this.missile?.destroy();
+          this.missile = undefined;
+          this.missileEmitter.on = false;
         }
       }
     });
@@ -625,5 +627,21 @@ export class GameScene extends Phaser.Scene {
     this.spaceShip.setAngularVelocity(0);
     this.spaceShip.rotation = direction.angle();
     this.reducePlayerHealth(40);
+  }
+
+  private reduceEnemyHealth(damage: number) {
+    this.enemyHealth -= damage;
+    if (this.enemyHealth <= 0) {
+      console.log('You won!');
+      this.won = true;
+      if (this.gameMode === GameMode.MULTI_PLAYER) {
+        // ToDo
+      } else {
+        sceneEvents.emit(events.playerWonInSinglePlayer);
+      }
+      this.enemyPlanetCover.setAlpha(0);
+    } else {
+      this.enemyPlanetCover.scale = this.enemyHealth / this.enemyMaxHealth;
+    }
   }
 }
