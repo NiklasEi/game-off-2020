@@ -249,7 +249,6 @@ export class GameScene extends Phaser.Scene {
 
     if (this.missile !== undefined) {
       const distanceShipMissile = new Vector2(this.spaceShip.x - this.missile.x, this.spaceShip.y - this.missile.y);
-      console.log(distanceShipMissile.length());
       const speed = distanceShipMissile.normalize().scale(5);
       this.missile.setRotation(speed.angle() + Math.PI / 2);
       this.missile.setVelocity(speed.x, speed.y);
