@@ -15,7 +15,9 @@ export interface PlayerStateInboundPayload extends PlayerStateOutboundPayload {
   playerId: string;
 }
 
-export type PlayerStateOutboundPayload = Entity;
+export interface PlayerStateOutboundPayload extends Entity {
+  emitting: boolean;
+}
 
 export interface SignedGameStatePayload extends GameStatePayload {
   secret: string;

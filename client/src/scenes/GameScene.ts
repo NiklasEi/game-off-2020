@@ -29,11 +29,15 @@ export class GameScene extends Phaser.Scene {
   public static UPPER_WORLD_BOUND: number = 5;
   public static LOWER_WORLD_BOUND: number = 95;
   private spaceShip!: Phaser.Physics.Matter.Image;
+  private enemyRocket?: Phaser.Physics.Matter.Image;
+  private readonly playerEmitters: Map<string, Phaser.GameObjects.Particles.ParticleEmitter[]> = new Map();
   private enemyPlanetCover!: Phaser.GameObjects.Image;
   private readonly enemyMaxHealth: number = 100;
   private enemyHealth: number = this.enemyMaxHealth;
   private spaceShipEmitterLeft!: Phaser.GameObjects.Particles.ParticleEmitter;
   private spaceShipEmitterRight!: Phaser.GameObjects.Particles.ParticleEmitter;
+  private playerParticleEmitterConfig!: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig;
+  private playerParticle!: Phaser.GameObjects.Particles.ParticleEmitterManager;
   private readonly leftEngine = new Vector2(-52, -28);
   private readonly rightEngine = new Vector2(-52, 28);
   private lastAsteroid: number = Date.now().valueOf();
@@ -45,6 +49,8 @@ export class GameScene extends Phaser.Scene {
   public gameMode: GameMode = GameMode.SINGLE_PLAYER;
   private code?: string;
   private playerType?: PlayerType;
+  private missileParticles!: Phaser.GameObjects.Particles.ParticleEmitterManager;
+  private missileParticleEmitterConfig!: Phaser.Types.GameObjects.Particles.ParticleEmitterConfig;
   public dead: boolean = false;
   public won: boolean = false;
   private spawn: Position = {
@@ -105,8 +111,8 @@ export class GameScene extends Phaser.Scene {
     map.createStaticLayer('asteroids', asteroidTileset);
     this.keys = this.input.keyboard.addKeys('W,S,A,D') as Control;
 
-    const particles = this.add.particles(assetKeys.ship.fire);
-    const emitterConfig = {
+    this.missileParticles = this.add.particles(assetKeys.enemyRocketParticles);
+    this.missileParticleEmitterConfig = {
       speed: 10,
       on: false,
       lifespan: 400,
@@ -115,8 +121,18 @@ export class GameScene extends Phaser.Scene {
       scale: { start: 1.0, end: 0 },
       blendMode: 'ADD'
     };
-    this.spaceShipEmitterLeft = particles.createEmitter(emitterConfig);
-    this.spaceShipEmitterRight = particles.createEmitter(emitterConfig);
+    this.playerParticle = this.add.particles(assetKeys.ship.fire);
+    this.playerParticleEmitterConfig = {
+      speed: 10,
+      on: false,
+      lifespan: 400,
+      alpha: 1000,
+      maxParticles: 100,
+      scale: { start: 1.0, end: 0 },
+      blendMode: 'ADD'
+    };
+    this.spaceShipEmitterLeft = this.playerParticle.createEmitter(this.playerParticleEmitterConfig);
+    this.spaceShipEmitterRight = this.playerParticle.createEmitter(this.playerParticleEmitterConfig);
 
     // The player and its settings
     const spaceShipShape = this.cache.json.get(assetKeys.ship.shape);
@@ -138,6 +154,11 @@ export class GameScene extends Phaser.Scene {
         }
         if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
           gameObjectB?.destroy();
+        }
+        if (bodyB.label === bodyLabels.enemyRocket) {
+          this.enemyRocket?.destroy();
+          this.enemyRocket = undefined;
+          this.reducePlayerHealth(50);
         }
       }
     });
@@ -223,6 +244,37 @@ export class GameScene extends Phaser.Scene {
       return;
     }
 
+    if (this.enemyRocket !== undefined) {
+      const distanceShipMissile = new Vector2(
+        this.spaceShip.x - this.enemyRocket.x,
+        this.spaceShip.y - this.enemyRocket.y
+      );
+      console.log(distanceShipMissile.length());
+      const speed = distanceShipMissile.normalize().scale(5);
+      this.enemyRocket.setRotation(speed.angle() + Math.PI / 2);
+      this.enemyRocket.setVelocity(speed.x, speed.y);
+    } else {
+      const distanceShipPlanet = new Vector2(
+        this.spaceShip.x - this.enemyPlanetCover.x,
+        this.spaceShip.y - this.enemyPlanetCover.y
+      );
+      if (distanceShipPlanet.length() < 5000) {
+        const offset = distanceShipPlanet.clone().normalize().scale(150);
+        console.log('spawned rocket');
+        this.enemyRocket = this.matter.add.image(
+          this.enemyPlanetCover.x + offset.x,
+          this.enemyPlanetCover.y + offset.y,
+          assetKeys.enemyRocket,
+          undefined,
+          {
+            label: bodyLabels.enemyRocket
+          }
+        );
+        const speed = distanceShipPlanet.clone().normalize().scale(5);
+        this.enemyRocket.setVelocity(speed.x, speed.y);
+      }
+    }
+
     const speedUpperThreshold = 10;
     const speedDelta = 0.1;
     const currentSpeed = this.spaceShip.body.velocity;
@@ -291,6 +343,22 @@ export class GameScene extends Phaser.Scene {
     if (cursors.space?.isDown) {
       this.shootLaser();
     }
+
+    for (const player of this.players) {
+      // @ts-ignore
+      if (!player.emitting) {
+        continue;
+      }
+      const rotation = player.rotation;
+      const leftEnginePosition = this.leftEngine.clone().rotate(rotation);
+      const rightEnginePosition = this.rightEngine.clone().rotate(rotation);
+      const emitters = this.playerEmitters.get(player.name);
+      if (emitters === undefined || emitters.length < 2) {
+        continue;
+      }
+      emitters[0].setPosition(player.x + leftEnginePosition.x, player.y + leftEnginePosition.y);
+      emitters[1].setPosition(player.x + rightEnginePosition.x, player.y + rightEnginePosition.y);
+    }
   }
 
   public sendGameEvents() {
@@ -305,7 +373,8 @@ export class GameScene extends Phaser.Scene {
           y: this.spaceShip.body.velocity.y
         },
         rotation: this.spaceShip.rotation,
-        angularVelocity: this.angularVelocity
+        angularVelocity: this.angularVelocity,
+        emitting: this.spaceShipEmitterLeft.on
       });
     }
   }
@@ -323,6 +392,10 @@ export class GameScene extends Phaser.Scene {
     });
     player.name = payload.playerId;
     this.players.push(player);
+
+    const leftEmitter = this.playerParticle.createEmitter(this.playerParticleEmitterConfig);
+    const rightEmitter = this.playerParticle.createEmitter(this.playerParticleEmitterConfig);
+    this.playerEmitters.set(payload.playerId, [leftEmitter, rightEmitter]);
 
     this.matterCollision.addOnCollideStart({
       objectA: player,
@@ -359,6 +432,15 @@ export class GameScene extends Phaser.Scene {
     player.setVelocityY(payload.velocity.y);
     player.setAngularVelocity(payload.angularVelocity);
     player.setRotation(payload.rotation);
+    // @ts-ignore
+    player.emitting = payload.emitting;
+
+    const emitters = this.playerEmitters.get(payload.playerId);
+    if (emitters !== undefined) {
+      for (const emitter of emitters) {
+        emitter.on = payload.emitting;
+      }
+    }
   }
 
   shootLaser() {

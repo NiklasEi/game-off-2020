@@ -7,7 +7,8 @@ export const bodyLabels = {
   otherLaserShot: 'other-laser-shot',
   asteroid: 'asteroid',
   planet: 'planet',
-  evilPlanet: 'evil-planet'
+  evilPlanet: 'evil-planet',
+  enemyRocket: 'enemy-rocket'
 };
 
 export const events = {
@@ -28,6 +29,8 @@ export const events = {
 };
 
 export const assetKeys = {
+  enemyRocket: 'enemy-rocket-image',
+  enemyRocketParticles: 'enemy-rocket-particles-image',
   planets: {
     earth: 'planet-earth',
     gas: 'planet-gas',

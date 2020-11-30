@@ -1,4 +1,5 @@
 import { Planet, PlanetType, SetMapPayload } from '../networking/MultiplayerEvent';
+import Vector2 = Phaser.Math.Vector2;
 
 const PLANET_RADIUS: number = 125;
 const DISTANCE_BETWEEN_PLANETS: number = 1000;
@@ -59,19 +60,13 @@ function generateRandomPlanets(enemyPlanet: Planet): Planet[] {
 }
 
 function doesFitWithPlanets(planets: Planet[], enemyPlanet: Planet, x: number, y: number) {
-  const vecToEnemy = {
-    x: enemyPlanet.position.x - x,
-    y: enemyPlanet.position.y - y
-  };
-  if (Math.pow(vecToEnemy.x, 2) + Math.pow(vecToEnemy.y, 2) < Math.pow(DISTANCE_BETWEEN_PLANETS, 2)) {
+  const vecToEnemy = new Vector2(enemyPlanet.position.x - x, enemyPlanet.position.y - y);
+  if (vecToEnemy.length() < DISTANCE_BETWEEN_PLANETS) {
     return false;
   }
   return planets.every((planet) => {
-    const distance = {
-      x: planet.position.x - x,
-      y: planet.position.y - y
-    };
-    return Math.pow(distance.x, 2) + Math.pow(distance.y, 2) > Math.pow(DISTANCE_BETWEEN_PLANETS, 2);
+    const distance = new Vector2(planet.position.x - x, planet.position.y - y);
+    return distance.length() > DISTANCE_BETWEEN_PLANETS;
   });
 }
 
