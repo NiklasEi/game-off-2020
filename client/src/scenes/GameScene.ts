@@ -68,6 +68,8 @@ export class GameScene extends Phaser.Scene {
   matterCollision: any;
   public maxHealth: number = 100;
   public health: number = this.maxHealth;
+  private damageToCommunicate: number = 0;
+  private totalDamageDealt: number = 0;
 
   constructor() {
     super(scenes.gameScene);
@@ -385,6 +387,7 @@ export class GameScene extends Phaser.Scene {
         angularVelocity: this.angularVelocity,
         emitting: this.spaceShipEmitterLeft.on,
         dead: this.dead,
+        damageDealt: this.damageToCommunicate,
         missile:
           this.missile === undefined
             ? undefined
@@ -405,6 +408,7 @@ export class GameScene extends Phaser.Scene {
           //   remove: this.laserGroup.laserShotsToRemove(),
         }
       });
+      this.damageToCommunicate = 0;
     }
   }
 
@@ -467,6 +471,10 @@ export class GameScene extends Phaser.Scene {
       player.setTint(0x808080);
     } else {
       player.clearTint();
+    }
+
+    if (payload.damageDealt !== undefined && payload.damageDealt > 0) {
+      this.reduceEnemyHealth(payload.damageDealt);
     }
 
     const emitters = this.playerEmitters.get(payload.playerId);
@@ -553,7 +561,10 @@ export class GameScene extends Phaser.Scene {
         }
         if (bodyB.label === bodyLabels.ownLaserShot) {
           gameObjectB?.destroy();
-          this.reduceEnemyHealth(10);
+          const damage = 10;
+          this.damageToCommunicate += damage;
+          this.totalDamageDealt += damage;
+          this.reduceEnemyHealth(damage);
         }
         if (bodyB.label === bodyLabels.ownSpaceship) {
           const direction = new Vector2(this.spaceShip.x - gameObjectA.x, this.spaceShip.y - gameObjectA.y);
@@ -564,7 +575,6 @@ export class GameScene extends Phaser.Scene {
           this.missile = undefined;
           sceneEvents.emit(events.missileRemoved);
           this.missileEmitter.on = false;
-          this.reduceEnemyHealth(20);
         }
       }
     });
@@ -691,13 +701,13 @@ export class GameScene extends Phaser.Scene {
     this.reducePlayerHealth(40);
   }
 
-  private reduceEnemyHealth(damage: number) {
+  public reduceEnemyHealth(damage: number) {
     this.enemyHealth -= damage;
     if (this.enemyHealth <= 0) {
       console.log('You won!');
       this.won = true;
       if (this.gameMode === GameMode.MULTI_PLAYER) {
-        // ToDo
+        sceneEvents.emit(events.playerWonInMultiPlayer);
       } else {
         sceneEvents.emit(events.playerWonInSinglePlayer);
       }

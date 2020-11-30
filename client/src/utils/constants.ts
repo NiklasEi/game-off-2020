@@ -26,6 +26,7 @@ export const events = {
   playerDied: 'player-died',
   playerDiedInSinglePlayer: 'player-died-single-player',
   playerWonInSinglePlayer: 'player-won-single-player',
+  playerWonInMultiPlayer: 'player-won-multi-player',
   playerRespawn: 'player-respawn',
   missileAdded: 'added-missile',
   missileRemoved: 'removed-missile'

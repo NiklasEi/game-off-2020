@@ -33,6 +33,8 @@ export default class GameHud extends Phaser.Scene {
   private lostInSinglePlayerTwo?: Phaser.GameObjects.Text;
   private wonInSinglePlayer?: Phaser.GameObjects.Text;
   private wonInSinglePlayerTwo?: Phaser.GameObjects.Text;
+  private wonInMultiPlayer?: Phaser.GameObjects.Text;
+  private wonInMultiPlayerTwo?: Phaser.GameObjects.Text;
 
   constructor() {
     super(scenes.gameHud);
@@ -189,6 +191,14 @@ export default class GameHud extends Phaser.Scene {
       () => {
         this.wonInSinglePlayer = this.add.text(570, 170, 'You won :)');
         this.wonInSinglePlayerTwo = this.add.text(450, 200, 'Refresh the page and beat them again');
+      },
+      this
+    );
+    sceneEvents.on(
+      events.playerWonInMultiPlayer,
+      () => {
+        this.wonInMultiPlayer = this.add.text(570, 170, 'You won :)');
+        this.wonInMultiPlayerTwo = this.add.text(450, 200, 'Refresh the page and beat them again');
       },
       this
     );
