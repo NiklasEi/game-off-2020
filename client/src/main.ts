@@ -5,6 +5,7 @@ import * as Phaser from 'phaser';
 import GameHud from './scenes/GameHud';
 // @ts-ignore
 import * as PhaserMatterCollisionPlugin from 'phaser-matter-collision-plugin';
+import { dimensions } from './utils/constants';
 
 const gameConfig: Phaser.Types.Core.GameConfig = {
   title: 'Phaser',
@@ -13,8 +14,8 @@ const gameConfig: Phaser.Types.Core.GameConfig = {
   backgroundColor: '#000000',
   parent: 'content',
 
-  width: 1200,
-  height: 900,
+  width: dimensions.width,
+  height: dimensions.height,
 
   physics: {
     default: 'matter',

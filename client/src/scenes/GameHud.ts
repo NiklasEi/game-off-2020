@@ -1,10 +1,13 @@
 import * as Phaser from 'phaser';
 
-import {sceneEvents} from '../events/EventCenter';
+import { sceneEvents } from '../events/EventCenter';
 import LaserGroup from '../laser/Laser';
-import {GameMode} from '../session/GameMode';
-import {Session} from '../session/Session';
-import {assetKeys, events, scenes} from '../utils/constants';
+import { GameMode } from '../session/GameMode';
+import { Session } from '../session/Session';
+import { assetKeys, events, scenes } from '../utils/constants';
+import Vector2 = Phaser.Math.Vector2;
+import { getIndicatorPosition } from '../utils/getIndicatorPosition';
+import { PlayerType } from '../networking/MultiplayerEvent';
 
 export default class GameHud extends Phaser.Scene {
   private ping!: Phaser.GameObjects.Text;
@@ -35,6 +38,7 @@ export default class GameHud extends Phaser.Scene {
   private wonInSinglePlayerTwo?: Phaser.GameObjects.Text;
   private wonInMultiPlayer?: Phaser.GameObjects.Text;
   private wonInMultiPlayerTwo?: Phaser.GameObjects.Text;
+  private readonly playerIndicators: Map<PlayerType, Phaser.GameObjects.Image> = new Map();
 
   constructor() {
     super(scenes.gameHud);
@@ -104,9 +108,6 @@ export default class GameHud extends Phaser.Scene {
 
   update() {
     const timestamp = Date.now().valueOf();
-    if (this.gameMode === GameMode.MULTI_PLAYER) {
-      this.paintPlayerIndicators();
-    }
     if (this.coolDownRight !== undefined || this.coolDownLeft !== undefined) {
       if (this.coolDownLeft !== undefined) {
         const diff = this.coolDownLeft - timestamp;
@@ -226,6 +227,8 @@ export default class GameHud extends Phaser.Scene {
       this
     );
 
+    sceneEvents.on(events.indicatePlayers, this.paintPlayerIndicators, this);
+
     this.leftLaserCharging = this.add.image(
       this.game.renderer.width / 2 - 20,
       this.game.renderer.height - 40,
@@ -271,7 +274,67 @@ export default class GameHud extends Phaser.Scene {
     });
   }
 
-  private paintPlayerIndicators() {
+  private paintPlayerIndicators(positionsAndTypes: { position: Vector2; type: PlayerType }[]) {
+    const iconPositionsAndTypes = positionsAndTypes.map(({ position, type }) => {
+      return { iconState: getIndicatorPosition(position), type };
+    });
+    for (const positionAndType of iconPositionsAndTypes) {
+      const icon = this.playerIndicators.get(positionAndType.type);
+      if (icon !== undefined) {
+        icon.setPosition(
+          positionAndType.iconState.x + this.game.renderer.width / 2,
+          positionAndType.iconState.y + this.game.renderer.height / 2
+        );
+        icon.setRotation(positionAndType.iconState.angle);
+        icon.setAlpha(positionAndType.iconState.active ? 1 : 0);
+      } else {
+        const newIcon = this.add.image(
+          positionAndType.iconState.x + this.game.renderer.width / 2,
+          positionAndType.iconState.y + this.game.renderer.height / 2,
+          this.getIconImageKeyFromType(positionAndType.type)
+        );
+        newIcon.scale = 0.6;
+        newIcon.setRotation(positionAndType.iconState.angle);
+        this.playerIndicators.set(positionAndType.type, newIcon);
+      }
+    }
+  }
 
+  private getIconImageKeyFromType(playerType?: PlayerType) {
+    switch (playerType) {
+      case PlayerType.YELLOW: {
+        return assetKeys.icons.yellow;
+      }
+      case PlayerType.BLUE: {
+        return assetKeys.icons.blue;
+      }
+      case PlayerType.GREEN: {
+        return assetKeys.icons.green;
+      }
+      case PlayerType.RED: {
+        return assetKeys.icons.red;
+      }
+      case PlayerType.GRAY: {
+        return assetKeys.icons.gray;
+      }
+      case PlayerType.LIGHTBLUE: {
+        return assetKeys.icons.lightblue;
+      }
+      case PlayerType.ORANGE: {
+        return assetKeys.icons.orange;
+      }
+      case PlayerType.PINK: {
+        return assetKeys.icons.pink;
+      }
+      case PlayerType.PURPLE: {
+        return assetKeys.icons.purple;
+      }
+      case PlayerType.TURQUOISE: {
+        return assetKeys.icons.turquoise;
+      }
+      default: {
+        return assetKeys.icons.blue;
+      }
+    }
   }
 }

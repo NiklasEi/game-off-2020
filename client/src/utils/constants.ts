@@ -32,7 +32,8 @@ export const events = {
   playerRespawn: 'player-respawn',
   missileAdded: 'added-missile',
   missileRemoved: 'removed-missile',
-  removeOwnLaserShot: 'remove-own-laser-shot'
+  removeOwnLaserShot: 'remove-own-laser-shot',
+  indicatePlayers: 'indicate-players'
 };
 
 export const assetKeys = {
@@ -92,6 +93,18 @@ export const assetKeys = {
     four: 'asteroid-4',
     five: 'asteroid-5',
     six: 'asteroid-6'
+  },
+  icons: {
+    yellow: 'spaceship-yellow-icon',
+    blue: 'spaceship-blue-icon',
+    green: 'spaceship-green-icon',
+    red: 'spaceship-red-icon',
+    gray: 'spaceship-gray-icon',
+    lightblue: 'spaceship-lightblue-icon',
+    orange: 'spaceship-orange-icon',
+    pink: 'spaceship-pink-icon',
+    purple: 'spaceship-purple-icon',
+    turquoise: 'spaceship-turquoise-icon'
   }
 };
 
@@ -144,4 +157,11 @@ export const difficulty = {
       }
     }
   }
+};
+
+export const zoom = 0.5;
+
+export const dimensions = {
+  width: 1200,
+  height: 900
 };

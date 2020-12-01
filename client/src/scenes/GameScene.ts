@@ -10,7 +10,7 @@ import {
   Position,
   SetMapPayload
 } from '../networking/MultiplayerEvent';
-import { assetKeys, bodyLabels, difficulty, events, scenes, tileSize } from '../utils/constants';
+import { assetKeys, bodyLabels, difficulty, events, scenes, tileSize, zoom } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
 import { sceneEvents } from '../events/EventCenter';
 import AsteroidGroup from '../asteroid/AsteroidGroup';
@@ -28,7 +28,6 @@ interface Control {
 export class GameScene extends Phaser.Scene {
   public static UPPER_WORLD_BOUND: number = 5;
   public static LOWER_WORLD_BOUND: number = 95;
-  private readonly missileCoolDown: number = 5000;
   private lastMissileTimestamp: number = 0;
   private spaceShip!: Phaser.Physics.Matter.Image;
   private readonly otherMissiles: Map<string, Phaser.Physics.Matter.Image> = new Map();
@@ -201,7 +200,7 @@ export class GameScene extends Phaser.Scene {
       }
     });
     this.cameras.main.startFollow(this.spaceShip, true);
-    this.cameras.main.zoom = 0.5;
+    this.cameras.main.zoom = zoom;
 
     this.laserGroup = new LaserGroup(this);
     this.asteroids = new AsteroidGroup(this);
@@ -255,6 +254,16 @@ export class GameScene extends Phaser.Scene {
     if (cursors === undefined) return;
 
     sceneEvents.emit(events.newFrameTimestamp, timeStamp);
+    if (this.gameMode === GameMode.MULTI_PLAYER) {
+      const positions = this.players.map((player: Phaser.Physics.Matter.Image) => {
+        return {
+          position: new Vector2(player.x - this.spaceShip.x, player.y - this.spaceShip.y),
+          // @ts-ignore
+          type: player.customType
+        };
+      });
+      sceneEvents.emit(events.indicatePlayers, positions);
+    }
 
     if (this.dead) {
       this.spaceShip.setAngularVelocity(0);
@@ -438,6 +447,8 @@ export class GameScene extends Phaser.Scene {
       label: bodyLabels.otherSpaceship
     });
     player.name = payload.playerId;
+    // @ts-ignore
+    player.customType = payload.playerType;
     this.players.push(player);
 
     const leftEmitter = this.playerParticle.createEmitter(this.playerParticleEmitterConfig);
