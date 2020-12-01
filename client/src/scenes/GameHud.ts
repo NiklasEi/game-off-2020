@@ -1,10 +1,10 @@
 import * as Phaser from 'phaser';
 
-import { sceneEvents } from '../events/EventCenter';
+import {sceneEvents} from '../events/EventCenter';
 import LaserGroup from '../laser/Laser';
-import { GameMode } from '../session/GameMode';
-import { Session } from '../session/Session';
-import { assetKeys, events, scenes } from '../utils/constants';
+import {GameMode} from '../session/GameMode';
+import {Session} from '../session/Session';
+import {assetKeys, events, scenes} from '../utils/constants';
 
 export default class GameHud extends Phaser.Scene {
   private ping!: Phaser.GameObjects.Text;
@@ -104,6 +104,9 @@ export default class GameHud extends Phaser.Scene {
 
   update() {
     const timestamp = Date.now().valueOf();
+    if (this.gameMode === GameMode.MULTI_PLAYER) {
+      this.paintPlayerIndicators();
+    }
     if (this.coolDownRight !== undefined || this.coolDownLeft !== undefined) {
       if (this.coolDownLeft !== undefined) {
         const diff = this.coolDownLeft - timestamp;
@@ -266,5 +269,9 @@ export default class GameHud extends Phaser.Scene {
         clearTimeout(this.coolDownRight);
       }
     });
+  }
+
+  private paintPlayerIndicators() {
+
   }
 }
