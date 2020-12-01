@@ -47,7 +47,7 @@ pub struct WsGameServer {
 }
 
 impl WsGameServer {
-    const CODE_CHARS: &'static [u8] = b"ABCDEFGHKLMNOPQRSTUVWXYZ";
+    const CODE_CHARS: &'static [u8] = b"ABCDEFGHKLMNOPRSTUVWXYZ";
 
     fn add_player_to_game(
         &mut self,

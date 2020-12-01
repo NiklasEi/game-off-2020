@@ -4,6 +4,7 @@ import { GameScene } from '../scenes/GameScene';
 import { assetKeys, bodyLabels, events } from '../utils/constants';
 import { GameMode } from '../session/GameMode';
 import Vector2 = Phaser.Math.Vector2;
+import { NamedEntity } from '../networking/MultiplayerEvent';
 
 enum LaserToShoot {
   LEFT,
@@ -13,16 +14,25 @@ enum LaserToShoot {
 
 class LaserGroup {
   public static readonly LASER_COOL_DOWN = 8000;
-  private readonly shootingCoolDown = 500;
+  private readonly shootingCoolDown = 80;
   private leftLastFire = Date.now().valueOf();
   private rightLastFire = Date.now().valueOf();
   private readonly leftLaser = new Vector2(80, -27);
   private readonly rightLaser = new Vector2(80, 26);
   private readonly gameScene: GameScene;
   private readonly ownLaserShots: Phaser.Physics.Matter.Image[] = [];
+  private toRemove: string[] = [];
+  private toAdd: Phaser.Physics.Matter.Image[] = [];
 
   constructor(gameScene: GameScene) {
     this.gameScene = gameScene;
+    sceneEvents.on(
+      events.removeOwnLaserShot,
+      (name: string) => {
+        this.toRemove.push(name);
+      },
+      this
+    );
     sceneEvents.once(events.startGame, () => {
       const timestamp = Date.now().valueOf();
       this.leftLastFire = Date.now().valueOf();
@@ -30,6 +40,35 @@ class LaserGroup {
       sceneEvents.emit(events.laserFireLeft, timestamp + LaserGroup.LASER_COOL_DOWN);
       sceneEvents.emit(events.laserFireRight, timestamp + LaserGroup.LASER_COOL_DOWN);
     });
+  }
+
+  public getLaserShotsUpdate(): {
+    remove?: string[];
+    add?: NamedEntity[];
+  } {
+    const toAdd =
+      this.toAdd.length > 0
+        ? this.toAdd.map((image) => ({
+            position: {
+              x: image.body.position.x,
+              y: image.body.position.y
+            },
+            velocity: {
+              x: image.body.velocity.x,
+              y: image.body.velocity.y
+            },
+            rotation: image.rotation,
+            angularVelocity: 0,
+            name: image.name
+          }))
+        : undefined;
+    this.toAdd = [];
+    const toRemove = this.toRemove.length > 0 ? [...this.toRemove] : undefined;
+    this.toRemove = [];
+    return {
+      remove: toRemove,
+      add: toAdd
+    };
   }
 
   fireLaser(x: number, y: number, velocity: Vector2) {
@@ -80,8 +119,9 @@ class LaserGroup {
     laser.setRotation(velocity.angle());
     laser.setVelocity(velocity.x, velocity.y);
     if (this.gameScene.gameMode === GameMode.MULTI_PLAYER) {
-      laser.name = `${bodyLabels.ownLaserShot}-${timestamp}`;
+      laser.name = `${timestamp}`;
       this.ownLaserShots.push(laser);
+      this.toAdd.push(laser);
     }
   }
 }

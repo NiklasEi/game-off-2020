@@ -32,6 +32,7 @@ export class GameScene extends Phaser.Scene {
   private lastMissileTimestamp: number = 0;
   private spaceShip!: Phaser.Physics.Matter.Image;
   private readonly otherMissiles: Map<string, Phaser.Physics.Matter.Image> = new Map();
+  private readonly otherLaserShots: Map<string, Phaser.Physics.Matter.Image[]> = new Map();
   private missile?: Phaser.Physics.Matter.Image;
   private missileEmitter!: Phaser.GameObjects.Particles.ParticleEmitter;
   private missileParticles!: Phaser.GameObjects.Particles.ParticleEmitterManager;
@@ -61,7 +62,7 @@ export class GameScene extends Phaser.Scene {
     x: 7 * tileSize,
     y: 7 * tileSize
   };
-  private laserGroup?: LaserGroup;
+  private laserGroup!: LaserGroup;
   private asteroids?: AsteroidGroup;
   private multiPlayerStarted: boolean = false;
   matterCollision: any;
@@ -135,7 +136,7 @@ export class GameScene extends Phaser.Scene {
       lifespan: 400,
       alpha: 1000,
       maxParticles: 100,
-      scale: { start: 1.0, end: 0 },
+      scale: { start: 2.0, end: 0 },
       blendMode: 'ADD'
     };
     this.spaceShipEmitterLeft = this.playerParticle.createEmitter(this.playerParticleEmitterConfig);
@@ -159,7 +160,14 @@ export class GameScene extends Phaser.Scene {
           gameObjectB?.destroy();
           this.reducePlayerHealth(difficulty.asteroids.damageToPlayer(this.gameMode));
         }
-        if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.otherLaserShot) {
+        if (bodyB.label === bodyLabels.ownLaserShot) {
+          if (this.gameMode === GameMode.MULTI_PLAYER) {
+            sceneEvents.emit(events.removeOwnLaserShot, gameObjectB.name);
+          }
+          gameObjectB?.destroy();
+        }
+        if (bodyB.label === bodyLabels.otherLaserShot) {
+          sceneEvents.emit(events.removeOwnLaserShot, gameObjectB.name);
           gameObjectB?.destroy();
         }
         if (bodyB.label === bodyLabels.missile) {
@@ -181,7 +189,13 @@ export class GameScene extends Phaser.Scene {
       objectA: Object.values(bounds.walls),
       callback: (eventData: any) => {
         const { bodyB, gameObjectB } = eventData;
-        if (bodyB.label === bodyLabels.ownLaserShot || bodyB.label === bodyLabels.asteroid) {
+        if (bodyB.label === bodyLabels.ownLaserShot) {
+          if (this.gameMode === GameMode.MULTI_PLAYER) {
+            sceneEvents.emit(events.removeOwnLaserShot, gameObjectB.name);
+          }
+          gameObjectB?.destroy();
+        }
+        if (bodyB.label === bodyLabels.asteroid) {
           gameObjectB?.destroy();
         }
       }
@@ -406,10 +420,7 @@ export class GameScene extends Phaser.Scene {
                 rotation: this.missile.rotation,
                 angularVelocity: 0
               },
-        laserShots: {
-          //   add: this.laserGroup.laserShotsToAdd(),
-          //   remove: this.laserGroup.laserShotsToRemove(),
-        }
+        laserShots: this.laserGroup.getLaserShotsUpdate()
       });
       this.damageToCommunicate = 0;
     }
@@ -510,17 +521,45 @@ export class GameScene extends Phaser.Scene {
       missile.setRotation(payload.missile.rotation);
       this.otherMissiles.set(payload.playerId, missile);
     }
-  }
 
-  shootLaser() {
-    if (this.laserGroup) {
-      const velocity = new Vector2(15, 0).rotate(this.spaceShip.rotation);
-      this.laserGroup.fireLaser(this.spaceShip.x, this.spaceShip.y, velocity);
+    if (payload.laserShots.remove !== undefined) {
+      for (const name of payload.laserShots.remove) {
+        const playerLaserShots = this.otherLaserShots.get(payload.playerId) ?? [];
+        const filteredShots = playerLaserShots.filter((shot: Phaser.Physics.Matter.Image) => {
+          if (shot.name === name) {
+            shot.destroy();
+            return false;
+          }
+          return true;
+        });
+        this.otherLaserShots.set(payload.playerId, filteredShots);
+      }
+    }
+    if (payload.laserShots.add !== undefined) {
+      const playerLaserShots = this.otherLaserShots.get(payload.playerId) ?? [];
+      for (const shot of payload.laserShots.add) {
+        const laser = this.matter.add.image(shot.position.x, shot.position.y, assetKeys.ship.laserShot, undefined, {
+          friction: 0,
+          frictionStatic: 0,
+          frictionAir: 0,
+          label: bodyLabels.otherLaserShot
+        });
+        const velocity = new Vector2(shot.velocity.x, shot.velocity.y);
+        laser.setRotation(velocity.angle());
+        laser.setVelocity(velocity.x, velocity.y);
+        laser.name = shot.name;
+        playerLaserShots.push(laser);
+      }
+      this.otherLaserShots.set(payload.playerId, playerLaserShots);
     }
   }
 
+  shootLaser() {
+    const velocity = new Vector2(15, 0).rotate(this.spaceShip.rotation);
+    this.laserGroup.fireLaser(this.spaceShip.x, this.spaceShip.y, velocity);
+  }
+
   public updateGameState(payload: GameStatePayload, isRoomLeader: boolean) {
-    console.log(`update state ${payload}`);
     if (!isRoomLeader && payload.asteroids !== undefined) {
       this.asteroids?.update(payload.asteroids);
     }
@@ -561,6 +600,9 @@ export class GameScene extends Phaser.Scene {
           gameObjectB?.destroy();
         }
         if (bodyB.label === bodyLabels.ownLaserShot) {
+          if (this.gameMode === GameMode.MULTI_PLAYER) {
+            sceneEvents.emit(events.removeOwnLaserShot, gameObjectB.name);
+          }
           gameObjectB?.destroy();
           const damage = difficulty.player.laserDamageToEvil(this.gameMode);
           this.damageToCommunicate += damage;
@@ -584,7 +626,13 @@ export class GameScene extends Phaser.Scene {
       objectA: planets,
       callback: (eventData: any) => {
         const { gameObjectA, bodyB, gameObjectB } = eventData;
-        if (bodyB.label === bodyLabels.asteroid || bodyB.label === bodyLabels.ownLaserShot) {
+        if (bodyB.label === bodyLabels.ownLaserShot) {
+          if (this.gameMode === GameMode.MULTI_PLAYER) {
+            sceneEvents.emit(events.removeOwnLaserShot, gameObjectB.name);
+          }
+          gameObjectB?.destroy();
+        }
+        if (bodyB.label === bodyLabels.asteroid) {
           gameObjectB?.destroy();
         }
         if (bodyB.label === bodyLabels.ownSpaceship) {

@@ -31,7 +31,8 @@ export const events = {
   playerWonInMultiPlayer: 'player-won-multi-player',
   playerRespawn: 'player-respawn',
   missileAdded: 'added-missile',
-  missileRemoved: 'removed-missile'
+  missileRemoved: 'removed-missile',
+  removeOwnLaserShot: 'remove-own-laser-shot'
 };
 
 export const assetKeys = {
@@ -112,9 +113,9 @@ export const difficulty = {
     },
     fireDistance: (gameMode: GameMode): number => {
       if (gameMode === GameMode.MULTI_PLAYER) {
-        return 3000;
-      } else {
         return 4000;
+      } else {
+        return 5000;
       }
     },
     damageToPlayer: (gameMode: GameMode): number => {
