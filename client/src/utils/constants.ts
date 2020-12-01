@@ -66,7 +66,8 @@ export const assetKeys = {
     controls: 'controls',
     createUniverse: 'create-universe',
     joinUniverse: 'join-universe',
-    play: 'play-button'
+    play: 'play-button',
+    background: 'menu-background'
   },
   hud: {
     icon: 'spaceship-icon',

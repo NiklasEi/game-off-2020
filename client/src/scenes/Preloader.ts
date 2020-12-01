@@ -56,6 +56,7 @@ export default class Preloader extends Phaser.Scene {
     this.load.image(assetKeys.menu.createUniverse, 'assets/mainMenu/createButton.png');
     this.load.image(assetKeys.menu.joinUniverse, 'assets/mainMenu/joinButton.png');
     this.load.image(assetKeys.menu.play, 'assets/mainMenu/playButton.png');
+    this.load.image(assetKeys.menu.background, 'assets/map/stars_tileset.png');
 
     // HUD
     this.load.image(assetKeys.hud.laser, 'assets/hud/laser.png');

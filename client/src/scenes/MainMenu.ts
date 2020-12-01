@@ -2,7 +2,7 @@ import * as Phaser from 'phaser';
 import { GameMode } from '../session/GameMode';
 import { Session } from '../session/Session';
 import { sceneEvents } from '../events/EventCenter';
-import { JoinGameAnswerPayload, PlayerJoinedGamePayload, PlayerType } from '../networking/MultiplayerEvent';
+import { JoinGameAnswerPayload } from '../networking/MultiplayerEvent';
 import { assetKeys, events, scenes } from '../utils/constants';
 
 export default class MainMenu extends Phaser.Scene {
@@ -20,6 +20,8 @@ export default class MainMenu extends Phaser.Scene {
   }
 
   create() {
+    const background = this.add.image(this.game.renderer.width / 2, this.game.renderer.height / 2, assetKeys.menu.background);
+    background.scale = 0.7;
     const controls = this.add.image(this.game.renderer.width / 2, 700, assetKeys.menu.controls);
     this.singlePlayButton = this.add.image(this.game.renderer.width / 2, 200, assetKeys.menu.start);
     this.singlePlayButton.setInteractive();
