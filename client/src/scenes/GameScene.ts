@@ -479,6 +479,18 @@ export class GameScene extends Phaser.Scene {
       }
       return true;
     });
+    const emitters = this.playerEmitters.get(payload.playerId) ?? [];
+    emitters.forEach((emitter) => (emitter.on = false));
+    this.playerEmitters.delete(payload.playerId);
+    this.otherMissiles.get(payload.playerId)?.destroy();
+    this.otherMissiles.delete(payload.playerId);
+    const shots = this.otherLaserShots.get(payload.playerId);
+    if (shots !== undefined) {
+      for (const shot of shots) {
+        shot.destroy();
+      }
+      this.otherLaserShots.delete(payload.playerId);
+    }
   }
 
   updatePlayer(payload: PlayerStateInboundPayload) {

@@ -278,6 +278,15 @@ export default class GameHud extends Phaser.Scene {
     const iconPositionsAndTypes = positionsAndTypes.map(({ position, type }) => {
       return { iconState: getIndicatorPosition(position), type };
     });
+    const toRemove = [...this.playerIndicators.keys()].filter(
+      (key: string) => !positionsAndTypes.find((pos) => pos.type === key)
+    );
+    if (toRemove.length > 0) {
+      toRemove.forEach((key) => {
+        this.playerIndicators.get(key)?.destroy();
+        this.playerIndicators.delete(key);
+      });
+    }
     for (const positionAndType of iconPositionsAndTypes) {
       const icon = this.playerIndicators.get(positionAndType.type);
       if (icon !== undefined) {
