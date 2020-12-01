@@ -68,7 +68,7 @@ export default class Preloader extends Phaser.Scene {
 
     // icons
     this.load.image(assetKeys.icons.blue, 'assets/icons/blue.png');
-    this.load.image(assetKeys.icons.gray, 'assets/icons/purple.png');
+    this.load.image(assetKeys.icons.gray, 'assets/icons/pink.png');
     this.load.image(assetKeys.icons.green, 'assets/icons/green.png');
     this.load.image(assetKeys.icons.lightblue, 'assets/icons/lightblue.png');
     this.load.image(assetKeys.icons.orange, 'assets/icons/orange.png');
